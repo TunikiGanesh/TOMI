@@ -424,6 +424,12 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 16,
   },
+  uploadHint: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
