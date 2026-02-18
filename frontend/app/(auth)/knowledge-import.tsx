@@ -259,9 +259,9 @@ export default function KnowledgeImport() {
             <Text style={styles.progressText}>Step 3 of 3</Text>
           </View>
           
-          <Text style={styles.title}>Import Your Knowledge</Text>
+          <Text style={styles.title}>Import Your Knowledge (Optional)</Text>
           <Text style={styles.subtitle}>
-            Upload existing documents so TOMI understands your business context
+            Upload business documents to give TOMI context and improve AI suggestions. You can skip this and TOMI will learn from your future interactions.
           </Text>
         </View>
 
