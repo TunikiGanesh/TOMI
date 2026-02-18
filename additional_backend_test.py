@@ -229,11 +229,11 @@ Phone: +1-555-987-6543
         
         if response and response.status_code == 200:
             result = response.json()
-            if "deleted" in result and result.get("deleted") == True:
+            if "message" in result and result["message"] == "Document deleted successfully":
                 self.log_test("Delete Document", True)
                 return True
             else:
-                self.log_test("Delete Document", False, "Document deletion not confirmed")
+                self.log_test("Delete Document", False, "Document deletion message not as expected")
         else:
             error_detail = response.json().get("detail", "Unknown error") if response else "No response"
             self.log_test("Delete Document", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
