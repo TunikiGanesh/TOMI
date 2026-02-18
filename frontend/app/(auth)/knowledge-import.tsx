@@ -243,15 +243,8 @@ export default function KnowledgeImport() {
   };
 
   const skipForNow = () => {
-    console.log('Skip button clicked');
-    Alert.alert(
-      'Continue Without Documents?',
-      'You can always upload documents later to improve TOMI\'s suggestions.\n\nWithout documents, TOMI will learn from your future interactions and decisions.',
-      [
-        { text: 'Upload Now', style: 'cancel' },
-        { text: 'Continue', onPress: completeOnboarding },
-      ]
-    );
+    console.log('Skip button clicked - completing onboarding without documents');
+    completeOnboarding();
   };
 
   return (
