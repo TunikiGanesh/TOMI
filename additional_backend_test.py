@@ -264,11 +264,11 @@ Phone: +1-555-987-6543
         
         if response and response.status_code == 200:
             result = response.json()
-            if "insights" in result:
+            if "insight" in result and "generated_at" in result:
                 self.log_test("AI Insights Generation", True)
                 return True
             else:
-                self.log_test("AI Insights Generation", False, "Missing insights in response")
+                self.log_test("AI Insights Generation", False, "Missing expected fields (insight, generated_at) in response")
         else:
             error_detail = response.json().get("detail", "Unknown error") if response else "No response"
             
