@@ -144,7 +144,7 @@ export default function Insights() {
               <Text style={styles.metricTitle}>Response Time</Text>
               <Ionicons name="time-outline" size={20} color="#007AFF" />
             </View>
-            <Text style={styles.metricValue}>< 2 hours</Text>
+            <Text style={styles.metricValue}>{'< 2 hours'}</Text>
             <Text style={styles.metricChange}>↑ 20% faster</Text>
           </View>
 
