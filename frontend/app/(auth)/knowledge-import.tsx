@@ -274,27 +274,21 @@ export default function KnowledgeImport() {
 
         <View style={styles.categorySection}>
           <Text style={styles.sectionTitle}>What documents do you have?</Text>
+          <Text style={styles.uploadHint}>Tap any category below to upload a document</Text>
           
           <View style={styles.categoryGrid}>
             {DOCUMENT_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={styles.categoryCard}
-                onPress={() =>
-                  Alert.alert(
-                    `Upload ${category.name}`,
-                    'Choose upload method',
-                    [
-                      { text: 'Choose File', onPress: () => pickDocument(category.id) },
-                      { text: 'Take Photo', onPress: () => pickImage(category.id) },
-                      { text: 'Cancel', style: 'cancel' },
-                    ]
-                  )
-                }
+                onPress={() => pickDocument(category.id)}
               >
                 <Ionicons name={category.icon as any} size={32} color="#007AFF" />
                 <Text style={styles.categoryName}>{category.name}</Text>
                 <Text style={styles.categoryDescription}>{category.description}</Text>
+                <View style={styles.uploadIconContainer}>
+                  <Ionicons name="cloud-upload-outline" size={20} color="#007AFF" />
+                </View>
               </TouchableOpacity>
             ))}
           </View>
