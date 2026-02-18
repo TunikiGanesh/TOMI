@@ -14,6 +14,7 @@ import bcrypt
 import jwt
 import shutil
 from document_processor import DocumentProcessor
+from llm_service import llm_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
