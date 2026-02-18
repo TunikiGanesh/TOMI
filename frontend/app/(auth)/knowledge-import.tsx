@@ -220,15 +220,18 @@ export default function KnowledgeImport() {
           await AsyncStorage.setItem('user', JSON.stringify(user));
         }
 
-        const message = data.has_knowledge_base
-          ? `Great! TOMI has processed ${data.documents_uploaded} documents and is ready to assist you.`
-          : 'TOMI will learn from your future interactions and get smarter over time.';
-
-        Alert.alert(
-          'Welcome to TOMI!',
-          message,
-          [{ text: 'Get Started', onPress: () => router.replace('/(tabs)/home') }]
-        );
+        // Navigate immediately
+        console.log('Navigating to home...');
+        router.replace('/(tabs)/home');
+        
+        // Show success message after navigation
+        setTimeout(() => {
+          const message = data.has_knowledge_base
+            ? `Great! TOMI has processed ${data.documents_uploaded} documents and is ready to assist you.`
+            : 'TOMI will learn from your future interactions and get smarter over time.';
+          
+          Alert.alert('Welcome to TOMI!', message);
+        }, 500);
       } else {
         const error = await response.json();
         console.error('Onboarding error:', error);
