@@ -530,6 +530,177 @@ backend:
         -comment: "✅ PASSED - Invalid resource error handling working correctly, returns 404 for invalid conversation IDs and other non-existent resources"
 
 frontend:
+  # Authentication Flow
+  - task: "Landing Screen Authentication Check"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing landing screen authentication flow - checks token, verifies with backend, routes to onboarding or home"
+
+  - task: "User Registration Form"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(auth)/register.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing registration form with name, email, phone, password validation and API call"
+
+  - task: "User Login Form"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(auth)/login.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing login form with email/password validation and navigation to onboarding or home"
+
+  # Onboarding Flow
+  - task: "Business Setup Form"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(auth)/business-setup.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing business setup form with name, type selection, products/services, working hours, location, team size"
+
+  - task: "Communication Preferences Form"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(auth)/communication-preferences.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing communication preferences with channel selection (email, sms, whatsapp, calls)"
+
+  - task: "Knowledge Import Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(auth)/knowledge-import.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing document categories, file picker, Skip for Now and Complete Setup buttons"
+
+  # Main App Navigation
+  - task: "Tab Navigation Layout"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/_layout.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing 5-tab navigation: Home, Conversations, Decisions, Insights, Control"
+
+  # Core Screens
+  - task: "Home Screen Dashboard"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/home.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing home screen with business card, document count, Try AI Assistant button"
+
+  - task: "AI Demo Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/ai-demo.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing AI demo with example messages, custom input, Generate AI Suggestion button, message analysis display"
+
+  - task: "Conversations List Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/conversations.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing conversations list, Create Test Conversation button, conversation cards, navigation to detail"
+
+  - task: "Conversation Detail Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/conversation/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing conversation detail with messages, AI suggestion sparkle icon, message input, send functionality"
+
+  - task: "Decisions Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/decisions.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing decisions screen with pattern display and empty state"
+
+  - task: "Insights Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/insights.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing insights screen with statistics cards and metrics display"
+
+  - task: "Control Center Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/control.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing control center with automation rules and logout functionality"
 
 metadata:
   created_by: "testing_agent"
