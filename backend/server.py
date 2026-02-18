@@ -1181,6 +1181,52 @@ async def toggle_automation(
     
     return {"automation_id": automation_id, "enabled": enabled}
 
+# ============ SUBSCRIPTION MANAGEMENT ============
+
+@app.get("/api/subscription/plans")
+async def get_plans():
+    """Get all subscription plans with pricing"""
+    plans = get_subscription_plans()
+    return {"plans": plans}
+
+@app.post("/api/subscription/create-checkout")
+async def create_subscription_checkout(
+    plan_id: str,
+    currency: str = 'inr',
+    user: Dict = Depends(get_current_user)
+):
+    """Create Stripe checkout session for subscription"""
+    
+    result = create_checkout_session(
+        plan_id=plan_id,
+        user_id=user['user_id'],
+        currency=currency
+    )
+    
+    if not result['success']:
+        raise HTTPException(status_code=400, detail=result.get('error'))
+    
+    return result
+
+@app.get("/api/subscription/status")
+async def get_subscription_status(user: Dict = Depends(get_current_user)):
+    """Get user's subscription status"""
+    
+    # Check if user has subscription in database
+    subscription = await db.subscriptions.find_one(
+        {"user_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not subscription:
+        return {
+            "active": False,
+            "plan": None,
+            "status": "none"
+        }
+    
+    return subscription
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/health")
