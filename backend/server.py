@@ -565,7 +565,7 @@ async def delete_document(
 async def complete_onboarding(user: Dict = Depends(get_current_user)):
     """Mark onboarding as complete"""
     
-    # Check if user has business and at least one document
+    # Check if user has business setup
     business = await db.businesses.find_one(
         {"owner_id": user['user_id']},
         {"_id": 0}
@@ -574,15 +574,10 @@ async def complete_onboarding(user: Dict = Depends(get_current_user)):
     if not business:
         raise HTTPException(status_code=400, detail="Business setup not completed")
     
+    # Check document count for messaging (optional, not required)
     document_count = await db.documents.count_documents(
         {"business_id": business['business_id']}
     )
-    
-    if document_count == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Please upload at least one document to help TOMI understand your business"
-        )
     
     # Mark onboarding as complete
     await db.users.update_one(
@@ -590,7 +585,11 @@ async def complete_onboarding(user: Dict = Depends(get_current_user)):
         {"$set": {"onboarding_completed": True}}
     )
     
-    return {"message": "Onboarding completed successfully"}
+    return {
+        "message": "Onboarding completed successfully",
+        "documents_uploaded": document_count,
+        "has_knowledge_base": document_count > 0
+    }
 
 # ============ CONVERSATIONS & AI ============
 
