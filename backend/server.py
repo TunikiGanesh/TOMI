@@ -931,6 +931,255 @@ async def get_insights(user: Dict = Depends(get_current_user)):
         logger.error(f"Insight generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============ CHANNEL SIMULATOR ============
+
+@app.post("/api/channels/simulate/{channel}")
+async def simulate_incoming(
+    channel: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Simulate incoming message from a channel (for testing)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Simulate incoming message
+    sim_result = await ChannelSimulator.simulate_incoming_message(
+        channel=channel,
+        business_id=business['business_id']
+    )
+    
+    if not sim_result['success']:
+        raise HTTPException(status_code=500, detail="Simulation failed")
+    
+    # Create conversation from simulated message
+    conversation_id = f"conv_{uuid.uuid4().hex[:12]}"
+    msg_data = sim_result['message']
+    
+    contact_info = msg_data.get('from', msg_data.get('sender', 'unknown'))
+    initial_msg = msg_data.get('body', '')
+    
+    conversation_doc = {
+        "conversation_id": conversation_id,
+        "business_id": business['business_id'],
+        "channel": channel,
+        "contact_name": f"Test Customer ({channel})",
+        "contact_info": contact_info,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc),
+        "last_message_at": datetime.now(timezone.utc),
+        "last_message": initial_msg,
+        "message_count": 1
+    }
+    
+    await db.conversations.insert_one(conversation_doc)
+    
+    # Create initial message
+    message_id = f"msg_{uuid.uuid4().hex[:12]}"
+    message_doc = {
+        "message_id": message_id,
+        "conversation_id": conversation_id,
+        "sender": "customer",
+        "content": initial_msg,
+        "timestamp": datetime.now(timezone.utc),
+        "read": False
+    }
+    
+    await db.messages.insert_one(message_doc)
+    
+    del conversation_doc['_id']
+    return {
+        "simulated": True,
+        "conversation": conversation_doc,
+        "message": initial_msg
+    }
+
+# ============ DECISION LEARNING & AUTOMATION ============
+
+class ActionRecord(BaseModel):
+    action_type: str  # reply, discount, booking, follow_up
+    context: Dict
+    decision: str  # approved, rejected, modified
+    automation_eligible: bool = False
+
+@app.post("/api/decisions/record")
+async def record_decision(
+    action: ActionRecord,
+    user: Dict = Depends(get_current_user)
+):
+    """Record owner's decision for pattern learning"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    decision_id = f"dec_{uuid.uuid4().hex[:12]}"
+    
+    decision_doc = {
+        "decision_id": decision_id,
+        "business_id": business['business_id'],
+        "action_type": action.action_type,
+        "context": action.context,
+        "decision": action.decision,
+        "timestamp": datetime.now(timezone.utc)
+    }
+    
+    await db.decisions.insert_one(decision_doc)
+    
+    # Check for patterns
+    similar_decisions = await db.decisions.find({
+        "business_id": business['business_id'],
+        "action_type": action.action_type,
+        "decision": action.decision
+    }).to_list(100)
+    
+    # If 5+ similar approved decisions, suggest automation
+    suggest_automation = len(similar_decisions) >= 5 and action.decision == "approved"
+    
+    return {
+        "recorded": True,
+        "decision_id": decision_id,
+        "pattern_count": len(similar_decisions),
+        "suggest_automation": suggest_automation
+    }
+
+@app.get("/api/decisions")
+async def get_decisions(
+    limit: int = 50,
+    user: Dict = Depends(get_current_user)
+):
+    """Get learned decision patterns"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    decisions = await db.decisions.find(
+        {"business_id": business['business_id']},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    # Analyze patterns
+    patterns = {}
+    for decision in decisions:
+        action_type = decision['action_type']
+        if action_type not in patterns:
+            patterns[action_type] = {'approved': 0, 'rejected': 0, 'total': 0}
+        
+        patterns[action_type][decision['decision']] += 1
+        patterns[action_type]['total'] += 1
+    
+    return {
+        "decisions": decisions,
+        "patterns": patterns,
+        "total_decisions": len(decisions)
+    }
+
+class AutomationRule(BaseModel):
+    action_type: str
+    conditions: Dict
+    action: str
+    enabled: bool = False
+    requires_approval: bool = True
+
+@app.post("/api/automations")
+async def create_automation(
+    rule: AutomationRule,
+    user: Dict = Depends(get_current_user)
+):
+    """Create automation rule"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    automation_id = f"auto_{uuid.uuid4().hex[:12]}"
+    
+    automation_doc = {
+        "automation_id": automation_id,
+        "business_id": business['business_id'],
+        "action_type": rule.action_type,
+        "conditions": rule.conditions,
+        "action": rule.action,
+        "enabled": rule.enabled,
+        "requires_approval": rule.requires_approval,
+        "created_at": datetime.now(timezone.utc),
+        "execution_count": 0
+    }
+    
+    await db.automations.insert_one(automation_doc)
+    
+    del automation_doc['_id']
+    return automation_doc
+
+@app.get("/api/automations")
+async def get_automations(user: Dict = Depends(get_current_user)):
+    """Get all automation rules"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    automations = await db.automations.find(
+        {"business_id": business['business_id']},
+        {"_id": 0}
+    ).to_list(100)
+    
+    return {
+        "automations": automations,
+        "count": len(automations)
+    }
+
+@app.put("/api/automations/{automation_id}/toggle")
+async def toggle_automation(
+    automation_id: str,
+    enabled: bool,
+    user: Dict = Depends(get_current_user)
+):
+    """Enable/disable automation"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await db.automations.update_one(
+        {
+            "automation_id": automation_id,
+            "business_id": business['business_id']
+        },
+        {"$set": {"enabled": enabled}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Automation not found")
+    
+    return {"automation_id": automation_id, "enabled": enabled}
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/health")
