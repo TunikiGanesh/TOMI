@@ -193,9 +193,11 @@ export default function KnowledgeImport() {
   };
 
   const completeOnboarding = async () => {
+    console.log('Complete Setup button clicked');
     setCompleting(true);
     try {
       const token = await AsyncStorage.getItem('auth_token');
+      console.log('Token:', token ? 'exists' : 'missing');
       
       const response = await fetch(`${API_URL}/api/onboarding/complete`, {
         method: 'POST',
@@ -204,8 +206,11 @@ export default function KnowledgeImport() {
         },
       });
 
+      console.log('Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Onboarding response:', data);
         
         // Update stored user
         const userStr = await AsyncStorage.getItem('user');
@@ -226,6 +231,7 @@ export default function KnowledgeImport() {
         );
       } else {
         const error = await response.json();
+        console.error('Onboarding error:', error);
         Alert.alert('Error', error.detail || 'Could not complete onboarding');
       }
     } catch (error) {
