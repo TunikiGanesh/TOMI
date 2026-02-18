@@ -701,39 +701,48 @@ frontend:
 
   - task: "Decisions Screen"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/app/(tabs)/decisions.tsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Testing decisions screen with pattern display and empty state"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED - Decisions screen fully implemented with decision learning info card, decision patterns display with progress bars, recent decisions list with approve/reject icons, and empty state for no decisions. Backend decision APIs confirmed working with pattern analysis."
 
   - task: "Insights Screen"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/app/(tabs)/insights.tsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Testing insights screen with statistics cards and metrics display"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED - Insights screen fully implemented with statistics grid (conversations, documents, decisions counts), business activity summary, key metrics cards (response time, AI suggestions, automation efficiency), and improvement tips section. Backend data aggregation APIs confirmed working."
 
   - task: "Control Center Screen"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/app/(tabs)/control.tsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Testing control center with automation rules and logout functionality"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED - Control Center screen fully implemented with control warning card, automation rules section with toggle switches, account settings menu (Profile, Business Settings, Knowledge Base, Notifications, Subscription), logout functionality with confirmation dialog, and version info. Backend automation APIs confirmed working."
 
 metadata:
   created_by: "testing_agent"
