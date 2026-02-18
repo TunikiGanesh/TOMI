@@ -592,6 +592,345 @@ async def complete_onboarding(user: Dict = Depends(get_current_user)):
     
     return {"message": "Onboarding completed successfully"}
 
+# ============ CONVERSATIONS & AI ============
+
+class ConversationCreate(BaseModel):
+    channel: str  # email, sms, whatsapp, call
+    contact_name: Optional[str] = None
+    contact_info: str  # email, phone, etc
+    initial_message: Optional[str] = None
+
+class MessageCreate(BaseModel):
+    content: str
+    sender: str  # 'customer' or 'owner'
+
+class AIReplyRequest(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+
+@app.post("/api/conversations")
+async def create_conversation(
+    conv_data: ConversationCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Create new conversation"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    conversation_id = f"conv_{uuid.uuid4().hex[:12]}"
+    
+    conversation_doc = {
+        "conversation_id": conversation_id,
+        "business_id": business['business_id'],
+        "channel": conv_data.channel,
+        "contact_name": conv_data.contact_name,
+        "contact_info": conv_data.contact_info,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc),
+        "last_message_at": datetime.now(timezone.utc),
+        "message_count": 0
+    }
+    
+    await db.conversations.insert_one(conversation_doc)
+    
+    # If there's an initial message, create it
+    if conv_data.initial_message:
+        message_id = f"msg_{uuid.uuid4().hex[:12]}"
+        message_doc = {
+            "message_id": message_id,
+            "conversation_id": conversation_id,
+            "sender": "customer",
+            "content": conv_data.initial_message,
+            "timestamp": datetime.now(timezone.utc),
+            "read": False
+        }
+        await db.messages.insert_one(message_doc)
+        
+        # Update conversation
+        await db.conversations.update_one(
+            {"conversation_id": conversation_id},
+            {"$set": {
+                "message_count": 1,
+                "last_message": conv_data.initial_message
+            }}
+        )
+    
+    del conversation_doc['_id']
+    return conversation_doc
+
+@app.get("/api/conversations")
+async def get_conversations(
+    status: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Get all conversations for business"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id']}
+    if status:
+        query["status"] = status
+    
+    conversations = await db.conversations.find(
+        query,
+        {"_id": 0}
+    ).sort("last_message_at", -1).to_list(100)
+    
+    return {
+        "conversations": conversations,
+        "count": len(conversations)
+    }
+
+@app.get("/api/conversations/{conversation_id}")
+async def get_conversation(
+    conversation_id: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Get conversation with messages"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    conversation = await db.conversations.find_one(
+        {
+            "conversation_id": conversation_id,
+            "business_id": business['business_id']
+        },
+        {"_id": 0}
+    )
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Get messages
+    messages = await db.messages.find(
+        {"conversation_id": conversation_id},
+        {"_id": 0}
+    ).sort("timestamp", 1).to_list(1000)
+    
+    conversation['messages'] = messages
+    return conversation
+
+@app.post("/api/conversations/{conversation_id}/messages")
+async def add_message(
+    conversation_id: str,
+    message_data: MessageCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Add message to conversation"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Verify conversation exists
+    conversation = await db.conversations.find_one({
+        "conversation_id": conversation_id,
+        "business_id": business['business_id']
+    })
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Create message
+    message_id = f"msg_{uuid.uuid4().hex[:12]}"
+    message_doc = {
+        "message_id": message_id,
+        "conversation_id": conversation_id,
+        "sender": message_data.sender,
+        "content": message_data.content,
+        "timestamp": datetime.now(timezone.utc),
+        "read": message_data.sender == 'owner'
+    }
+    
+    await db.messages.insert_one(message_doc)
+    
+    # Update conversation
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {
+            "$set": {
+                "last_message": message_data.content,
+                "last_message_at": datetime.now(timezone.utc)
+            },
+            "$inc": {"message_count": 1}
+        }
+    )
+    
+    del message_doc['_id']
+    return message_doc
+
+@app.post("/api/ai/suggest-reply")
+async def suggest_reply(
+    request: AIReplyRequest,
+    user: Dict = Depends(get_current_user)
+):
+    """Generate AI reply suggestion based on message and business context"""
+    
+    try:
+        # Get business context
+        business = await db.businesses.find_one(
+            {"owner_id": user['user_id']},
+            {"_id": 0}
+        )
+        
+        if not business:
+            raise HTTPException(status_code=404, detail="Business not found")
+        
+        # Get relevant documents for context
+        documents = await db.documents.find(
+            {"business_id": business['business_id']},
+            {"_id": 0, "extracted_text": 1, "filename": 1, "category": 1}
+        ).to_list(10)
+        
+        business['relevant_documents'] = documents
+        
+        # Get conversation history if provided
+        conversation_history = []
+        if request.conversation_id:
+            messages = await db.messages.find(
+                {"conversation_id": request.conversation_id},
+                {"_id": 0}
+            ).sort("timestamp", -1).limit(10).to_list(10)
+            
+            conversation_history = [
+                {
+                    "sender": msg['sender'],
+                    "content": msg['content']
+                }
+                for msg in reversed(messages)
+            ]
+        
+        # Generate AI suggestion
+        result = await llm_service.generate_reply_suggestion(
+            message=request.message,
+            business_context=business,
+            conversation_history=conversation_history,
+            model_type='smart'
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=500, detail=result.get('error', 'AI generation failed'))
+        
+        return {
+            "suggested_reply": result['suggested_reply'],
+            "model_used": result['model_used'],
+            "context_used": result['context_used']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AI suggestion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ai/analyze-message")
+async def analyze_message(
+    request: AIReplyRequest,
+    user: Dict = Depends(get_current_user)
+):
+    """Analyze message for intent, sentiment, and extract information"""
+    
+    try:
+        business = await db.businesses.find_one(
+            {"owner_id": user['user_id']},
+            {"_id": 0}
+        )
+        
+        if not business:
+            raise HTTPException(status_code=404, detail="Business not found")
+        
+        result = await llm_service.analyze_message(
+            message=request.message,
+            business_context=business
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=500, detail=result.get('error', 'Analysis failed'))
+        
+        return result['analysis']
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Message analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ai/insights")
+async def get_insights(user: Dict = Depends(get_current_user)):
+    """Generate business insights from conversations and data"""
+    
+    try:
+        business = await db.businesses.find_one(
+            {"owner_id": user['user_id']},
+            {"_id": 0}
+        )
+        
+        if not business:
+            raise HTTPException(status_code=404, detail="Business not found")
+        
+        # Gather data for insights
+        conversation_count = await db.conversations.count_documents({
+            "business_id": business['business_id']
+        })
+        
+        message_count = await db.messages.count_documents({
+            "conversation_id": {"$regex": "^conv_"}  # All conversations
+        })
+        
+        document_count = await db.documents.count_documents({
+            "business_id": business['business_id']
+        })
+        
+        data_summary = f"""Business Activity Summary:
+- Total conversations: {conversation_count}
+- Total messages: {message_count}
+- Documents in knowledge base: {document_count}
+- Business type: {business.get('business_type', 'Unknown')}
+- Products/Services: {business.get('products_services', 'Not specified')}
+"""
+        
+        result = await llm_service.generate_insight(
+            data_summary=data_summary,
+            insight_type="business_activity",
+            business_context=business
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=500, detail=result.get('error', 'Insight generation failed'))
+        
+        return {
+            "insight": result['insight'],
+            "generated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Insight generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/health")
