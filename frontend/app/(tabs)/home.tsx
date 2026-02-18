@@ -142,13 +142,16 @@ export default function Home() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionGrid}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => router.push('/ai-demo')}
+            >
+              <Ionicons name="sparkles" size={32} color="#007AFF" />
+              <Text style={styles.actionText}>Try AI Assistant</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.actionCard}>
               <Ionicons name="add-circle" size={32} color="#007AFF" />
               <Text style={styles.actionText}>Upload Document</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCard}>
-              <Ionicons name="chatbubble" size={32} color="#007AFF" />
-              <Text style={styles.actionText}>New Conversation</Text>
             </TouchableOpacity>
           </View>
         </View>
