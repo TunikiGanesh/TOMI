@@ -391,6 +391,97 @@ backend:
         -agent: "testing"
         -comment: "✅ PASSED - Channel simulator SMS working correctly, creates test conversations with simulated SMS messages"
         
+  - task: "Channel Simulator WhatsApp"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "New task - POST /api/channels/simulate/whatsapp endpoint needs testing for test conversation creation"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASSED - Channel simulator WhatsApp working correctly, creates test conversations with simulated WhatsApp messages"
+
+  # Additional Missing Endpoints
+  - task: "User Logout Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "New task - POST /api/auth/logout endpoint needs testing for user session termination"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASSED - User logout working correctly, terminates user session"
+        
+  - task: "Get Business Details Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "New task - GET /api/business endpoint needs testing for retrieving business information"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASSED - Get business details working correctly, returns complete business information"
+        
+  - task: "Update Business Details Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "New task - PUT /api/business endpoint needs testing for updating business information"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASSED - Update business details working correctly, successfully updates business information and persists changes"
+        
+  - task: "Delete Document Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "New task - DELETE /api/documents/{id} endpoint needs testing for document removal"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASSED - Delete document working correctly, removes document from database and filesystem"
+        
+  - task: "AI Insights Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "New task - GET /api/ai/insights endpoint needs testing for business insights generation"
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASSED - AI insights generation working correctly with Claude LLM, generates comprehensive business analysis reports"
+        
   # Supporting Services
   - task: "LLM Service Integration"
     implemented: true
