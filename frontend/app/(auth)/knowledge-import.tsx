@@ -46,6 +46,7 @@ export default function KnowledgeImport() {
 
   const pickDocument = async (category: string) => {
     try {
+      console.log('Picking document for category:', category);
       const result = await DocumentPicker.getDocumentAsync({
         type: [
           'application/pdf',
@@ -58,13 +59,19 @@ export default function KnowledgeImport() {
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled) return;
+      console.log('Document picker result:', result);
+
+      if (result.canceled) {
+        console.log('Document picker canceled');
+        return;
+      }
 
       const file = result.assets[0];
+      console.log('Selected file:', file);
       await uploadDocument(file, category);
     } catch (error) {
       console.error('Document picker error:', error);
-      Alert.alert('Error', 'Failed to pick document');
+      Alert.alert('Error', `Failed to pick document: ${error.message || 'Unknown error'}`);
     }
   };
 
