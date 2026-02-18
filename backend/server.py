@@ -16,6 +16,7 @@ import shutil
 from document_processor import DocumentProcessor
 from llm_service import llm_service
 from channels import ChannelSimulator
+from subscription_service import get_subscription_plans, create_checkout_session, verify_subscription
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
