@@ -198,15 +198,20 @@ Phone: +1-555-987-6543
         
         if response and response.status_code == 200:
             result = response.json()
-            if "business_id" in result and "name" in result:
-                # Verify the update actually happened
-                if result["name"] == "Alex's Advanced Tech Solutions":
-                    self.log_test("Update Business Details", True)
-                    return True
+            if "message" in result and result["message"] == "Business updated successfully":
+                # Verify the update by fetching the business details
+                verify_response = self.make_request("GET", "/business")
+                if verify_response and verify_response.status_code == 200:
+                    business = verify_response.json()
+                    if business.get("name") == "Alex's Advanced Tech Solutions":
+                        self.log_test("Update Business Details", True)
+                        return True
+                    else:
+                        self.log_test("Update Business Details", False, "Business name was not updated correctly after verification")
                 else:
-                    self.log_test("Update Business Details", False, "Business name was not updated correctly")
+                    self.log_test("Update Business Details", False, "Could not verify update")
             else:
-                self.log_test("Update Business Details", False, "Missing required fields in update response")
+                self.log_test("Update Business Details", False, "Missing success message in update response")
         else:
             error_detail = response.json().get("detail", "Unknown error") if response else "No response"
             self.log_test("Update Business Details", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
