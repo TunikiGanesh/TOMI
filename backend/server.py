@@ -401,6 +401,196 @@ async def update_business(business_data: BusinessSetup, user: Dict = Depends(get
     
     return {"message": "Business updated successfully"}
 
+# ============ COMMUNICATION PREFERENCES ============
+
+class CommunicationPreferences(BaseModel):
+    channels: List[str]
+
+@app.post("/api/business/communication-preferences")
+async def set_communication_preferences(
+    prefs: CommunicationPreferences,
+    user: Dict = Depends(get_current_user)
+):
+    """Set communication channel preferences"""
+    
+    # Update business with communication preferences
+    result = await db.businesses.update_one(
+        {"owner_id": user['user_id']},
+        {"$set": {
+            "communication_channels": prefs.channels,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    return {"message": "Communication preferences saved"}
+
+# ============ DOCUMENT UPLOAD & KNOWLEDGE BASE ============
+
+# Create uploads directory
+UPLOAD_DIR = Path("/app/backend/uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+class DocumentUploadResponse(BaseModel):
+    document_id: str
+    filename: str
+    extracted_text: str
+    success: bool
+    metadata: Optional[Dict] = None
+
+@app.post("/api/documents/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    category: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+) -> DocumentUploadResponse:
+    """Upload document and extract text with OCR"""
+    
+    try:
+        # Get user's business
+        business = await db.businesses.find_one(
+            {"owner_id": user['user_id']},
+            {"_id": 0}
+        )
+        
+        if not business:
+            raise HTTPException(status_code=404, detail="Business not found")
+        
+        # Save uploaded file temporarily
+        document_id = f"doc_{uuid.uuid4().hex[:12]}"
+        file_ext = Path(file.filename).suffix
+        temp_file_path = UPLOAD_DIR / f"{document_id}{file_ext}"
+        
+        with open(temp_file_path, 'wb') as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Process document and extract text
+        processor_result = await DocumentProcessor.process_document(
+            str(temp_file_path),
+            file.content_type or file.filename
+        )
+        
+        # Store document metadata and extracted text in database
+        document_doc = {
+            "document_id": document_id,
+            "business_id": business['business_id'],
+            "filename": file.filename,
+            "file_type": file.content_type,
+            "category": category or "general",
+            "extracted_text": processor_result.get('extracted_text', ''),
+            "extraction_success": processor_result.get('success', False),
+            "extraction_method": processor_result.get('extraction_method'),
+            "metadata": processor_result.get('metadata', {}),
+            "uploaded_at": datetime.now(timezone.utc),
+            "file_path": str(temp_file_path)
+        }
+        
+        await db.documents.insert_one(document_doc)
+        
+        return DocumentUploadResponse(
+            document_id=document_id,
+            filename=file.filename,
+            extracted_text=processor_result.get('extracted_text', ''),
+            success=processor_result.get('success', False),
+            metadata=processor_result.get('metadata')
+        )
+        
+    except Exception as e:
+        logger.error(f"Document upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+
+@app.get("/api/documents")
+async def get_documents(user: Dict = Depends(get_current_user)):
+    """Get all uploaded documents for user's business"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    documents = await db.documents.find(
+        {"business_id": business['business_id']},
+        {"_id": 0, "file_path": 0}  # Don't expose file paths
+    ).to_list(100)
+    
+    return {
+        "documents": documents,
+        "count": len(documents)
+    }
+
+@app.delete("/api/documents/{document_id}")
+async def delete_document(
+    document_id: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Delete a document"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Find and delete document
+    document = await db.documents.find_one({
+        "document_id": document_id,
+        "business_id": business['business_id']
+    })
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Delete file from disk
+    try:
+        file_path = Path(document['file_path'])
+        if file_path.exists():
+            file_path.unlink()
+    except Exception as e:
+        logger.error(f"Failed to delete file: {str(e)}")
+    
+    # Delete from database
+    await db.documents.delete_one({"document_id": document_id})
+    
+    return {"message": "Document deleted successfully"}
+
+@app.post("/api/onboarding/complete")
+async def complete_onboarding(user: Dict = Depends(get_current_user)):
+    """Mark onboarding as complete"""
+    
+    # Check if user has business and at least one document
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=400, detail="Business setup not completed")
+    
+    document_count = await db.documents.count_documents(
+        {"business_id": business['business_id']}
+    )
+    
+    if document_count == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload at least one document to help TOMI understand your business"
+        )
+    
+    # Mark onboarding as complete
+    await db.users.update_one(
+        {"user_id": user['user_id']},
+        {"$set": {"onboarding_completed": True}}
+    )
+    
+    return {"message": "Onboarding completed successfully"}
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/health")
