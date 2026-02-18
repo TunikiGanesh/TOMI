@@ -1,30 +1,103 @@
-import { Text, View, StyleSheet, Image } from "react-native";
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { useRouter, useSegments } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'expo-status-bar';
 
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function Index() {
-  console.log(EXPO_PUBLIC_BACKEND_URL, "EXPO_PUBLIC_BACKEND_URL");
+  const router = useRouter();
+  const segments = useSegments();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  return (
-    <View style={styles.container}>
-      <Image
-        source={require("../assets/images/app-image.png")}
-        style={styles.image}
-      />
-    </View>
-  );
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      // Check for stored token
+      const token = await AsyncStorage.getItem('auth_token');
+      
+      if (!token) {
+        // No token, go to login
+        router.replace('/(auth)/login');
+        return;
+      }
+
+      // Verify token with backend
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        
+        // Check if onboarding is completed
+        if (!user.onboarding_completed) {
+          router.replace('/(auth)/business-setup');
+        } else {
+          router.replace('/(tabs)/home');
+        }
+      } else {
+        // Invalid token
+        await AsyncStorage.removeItem('auth_token');
+        router.replace('/(auth)/login');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.replace('/(auth)/login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <Image
+          source={require('../assets/images/icon.png')}
+          style={styles.logo}
+        />
+        <Text style={styles.title}>TOMI</Text>
+        <Text style={styles.subtitle}>The Owner Mind</Text>
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      </View>
+    );
+  }
+
+  return null;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0c0c0c",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#0c0c0c',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#999',
+    marginBottom: 40,
+  },
+  loader: {
+    marginTop: 20,
   },
 });
