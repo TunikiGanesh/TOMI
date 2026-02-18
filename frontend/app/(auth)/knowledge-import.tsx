@@ -186,11 +186,6 @@ export default function KnowledgeImport() {
   };
 
   const completeOnboarding = async () => {
-    if (documents.filter(doc => !doc.uploading).length === 0) {
-      Alert.alert('Upload Required', 'Please upload at least one document to help TOMI understand your business');
-      return;
-    }
-
     setCompleting(true);
     try {
       const token = await AsyncStorage.getItem('auth_token');
@@ -203,6 +198,8 @@ export default function KnowledgeImport() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        
         // Update stored user
         const userStr = await AsyncStorage.getItem('user');
         if (userStr) {
@@ -211,9 +208,13 @@ export default function KnowledgeImport() {
           await AsyncStorage.setItem('user', JSON.stringify(user));
         }
 
+        const message = data.has_knowledge_base
+          ? `Great! TOMI has processed ${data.documents_uploaded} documents and is ready to assist you.`
+          : 'TOMI will learn from your future interactions and get smarter over time.';
+
         Alert.alert(
           'Welcome to TOMI!',
-          'Your business knowledge base has been created. TOMI is now learning from your documents.',
+          message,
           [{ text: 'Get Started', onPress: () => router.replace('/(tabs)/home') }]
         );
       } else {
@@ -230,11 +231,11 @@ export default function KnowledgeImport() {
 
   const skipForNow = () => {
     Alert.alert(
-      'Skip Upload?',
-      'TOMI works best when it understands your business. You can upload documents later in Settings.',
+      'Continue Without Documents?',
+      'You can always upload documents later to improve TOMI\'s suggestions.\n\nWithout documents, TOMI will learn from your future interactions and decisions.',
       [
         { text: 'Upload Now', style: 'cancel' },
-        { text: 'Skip', style: 'destructive', onPress: completeOnboarding },
+        { text: 'Continue', onPress: completeOnboarding },
       ]
     );
   };
