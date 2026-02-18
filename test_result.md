@@ -397,13 +397,28 @@ metadata:
 
 test_plan:
   current_focus:
+    - "User Registration Endpoint"
+    - "User Login Endpoint"
+    - "Business Setup Endpoint"
+    - "Communication Preferences Endpoint"
+    - "Onboarding Completion Endpoint"
+    - "Get Current User Endpoint"
+    - "Document Upload Endpoint"
+    - "Get Documents Endpoint"
+    - "Conversation Management CRUD"
     - "AI Reply Suggestion Endpoint"
     - "Message Analysis Endpoint"
-    - "Conversation Management CRUD"
-    - "AI Insights Endpoint"
-    - "LLM Service Integration"
+    - "Decision Recording Endpoint"
+    - "Get Decision Patterns Endpoint"
+    - "Create Automation Rule Endpoint"
+    - "Get Automations Endpoint"
+    - "Toggle Automation Endpoint"
+    - "Channel Simulator Email"
+    - "Channel Simulator SMS"
+    - "Authentication Error Handling"
+    - "Invalid Resource Error Handling"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
@@ -411,3 +426,5 @@ agent_communication:
     -message: "Starting Phase 3 AI Integration testing. Found all AI endpoints implemented with emergentintegrations LLM service. Will test: 1) AI reply suggestions with business context, 2) Message analysis for intent/sentiment, 3) Conversation CRUD operations, 4) AI insights generation, 5) LLM service with Emergent key integration. Backend URL: https://tomi-learn.preview.emergentagent.com/api"
     -agent: "testing"
     -message: "✅ PHASE 3 AI INTEGRATION TESTING COMPLETE - 91.7% Success Rate (11/12 tests passed). SUCCESSFUL: ✅ AI Reply Suggestions with business context using GPT-5.1, ✅ Message Analysis with GPT-5-mini correctly identifying intent/sentiment/urgency, ✅ All Conversation CRUD operations, ✅ LLM Service integration with EmergentIntegrations library, ✅ Error handling for auth and invalid requests. ISSUE: ❌ AI Insights endpoint failed due to LLM budget exceeded ($0.0015 > $0.001 limit) - this is expected behavior when budget is exhausted. All core AI features are working correctly."
+    -agent: "testing"
+    -message: "📋 COMPREHENSIVE TOMI TESTING INITIATED - All Phases (1-7). Updated test_result.md with 20 backend tasks across: Phase 1 (Auth/Onboarding - 6 tasks), Phase 2 (Documents - 2 tasks), Phase 3 (Conversations/AI - 4 tasks), Phase 4 (Decision Learning - 2 tasks), Phase 5 (Automation - 3 tasks), Phase 6 (Channel Simulator - 2 tasks), Plus Error Handling (2 tasks). Backend URL: https://tomi-learn.preview.emergentagent.com/api. Starting complete user flow testing from registration to automation."
