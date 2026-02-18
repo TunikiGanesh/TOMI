@@ -458,6 +458,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+  uploadIconContainer: {
+    marginTop: 8,
+    padding: 4,
+  },
   uploadedSection: {
     marginBottom: 24,
   },
