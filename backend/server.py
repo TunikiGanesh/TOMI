@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Header, Response, Request
+from fastapi import FastAPI, HTTPException, Depends, Header, Response, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
@@ -12,6 +12,8 @@ import logging
 import httpx
 import bcrypt
 import jwt
+import shutil
+from document_processor import DocumentProcessor
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
