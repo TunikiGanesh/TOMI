@@ -237,6 +237,7 @@ export default function KnowledgeImport() {
   };
 
   const skipForNow = () => {
+    console.log('Skip button clicked');
     Alert.alert(
       'Continue Without Documents?',
       'You can always upload documents later to improve TOMI\'s suggestions.\n\nWithout documents, TOMI will learn from your future interactions and decisions.',
