@@ -221,12 +221,15 @@ export default function Control() {
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/subscription')}
+          >
             <View style={styles.settingLeft}>
               <Ionicons name="card-outline" size={24} color="#007AFF" />
               <View style={styles.settingInfo}>
                 <Text style={styles.settingTitle}>Subscription</Text>
-                <Text style={styles.settingSubtitle}>Manage your plan</Text>
+                <Text style={styles.settingSubtitle}>⚡ All plans at ₹1 for testing</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
