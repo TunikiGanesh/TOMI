@@ -7,7 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-} from 'react';
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
