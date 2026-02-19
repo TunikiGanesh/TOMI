@@ -66,7 +66,8 @@ export default function Login() {
   const handleGoogleLogin = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     // For mobile/web compatibility, use EXPO_PUBLIC_BACKEND_URL
-    const redirectUrl = `${API_URL}/(auth)/auth-callback`;
+    // The auth-callback is at the root level (not under (auth) folder)
+    const redirectUrl = `${API_URL}/auth-callback`;
     const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
     Linking.openURL(authUrl);
   };
