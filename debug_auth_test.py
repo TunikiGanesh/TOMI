@@ -3,7 +3,7 @@
 import requests
 
 # Test authentication errors
-BASE_URL = "https://tomi-learn.preview.emergentagent.com/api"
+BASE_URL = "https://owner-command-center.preview.emergentagent.com/api"
 
 def test_auth_errors():
     endpoints = ["/conversations", "/business/setup", "/documents", "/ai/suggest-reply"]

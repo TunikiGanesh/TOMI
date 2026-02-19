@@ -8,7 +8,7 @@ import json
 import os
 import uuid
 
-BASE_URL = "https://tomi-learn.preview.emergentagent.com/api"
+BASE_URL = "https://owner-command-center.preview.emergentagent.com/api"
 TEST_EMAIL = f"debug.test.{uuid.uuid4().hex[:8]}@example.com"
 TEST_PASSWORD = "SecureTestPassword123!"
 
