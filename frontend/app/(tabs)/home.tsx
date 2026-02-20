@@ -143,25 +143,67 @@ export default function Home() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionGrid}>
             <TouchableOpacity 
+              style={[styles.actionCard, styles.primaryAction]}
+              onPress={() => router.push('/chatbot')}
+            >
+              <Ionicons name="sparkles" size={32} color="#fff" />
+              <Text style={[styles.actionText, styles.primaryActionText]}>Ask TOMI</Text>
+              <Text style={styles.actionSubtext}>AI Assistant</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/ai-demo')}
             >
-              <Ionicons name="sparkles" size={32} color="#007AFF" />
-              <Text style={styles.actionText}>Try AI Assistant</Text>
+              <Ionicons name="chatbubbles" size={32} color="#007AFF" />
+              <Text style={styles.actionText}>AI Demo</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCard}>
-              <Ionicons name="add-circle" size={32} color="#007AFF" />
-              <Text style={styles.actionText}>Upload Document</Text>
+          </View>
+          
+          {/* Enterprise Features */}
+          <View style={styles.enterpriseGrid}>
+            <TouchableOpacity style={styles.enterpriseCard}>
+              <View style={[styles.enterpriseIcon, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="calculator" size={24} color="#4CAF50" />
+              </View>
+              <Text style={styles.enterpriseText}>Accounting</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.enterpriseCard}>
+              <View style={[styles.enterpriseIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="people" size={24} color="#2196F3" />
+              </View>
+              <Text style={styles.enterpriseText}>Payroll</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.enterpriseCard}>
+              <View style={[styles.enterpriseIcon, { backgroundColor: '#FFF3E0' }]}>
+                <Ionicons name="storefront" size={24} color="#FF9800" />
+              </View>
+              <Text style={styles.enterpriseText}>Vendors</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.enterpriseCard}>
+              <View style={[styles.enterpriseIcon, { backgroundColor: '#F3E5F5' }]}>
+                <Ionicons name="git-branch" size={24} color="#9C27B0" />
+              </View>
+              <Text style={styles.enterpriseText}>Branches</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.comingSoonSection}>
-          <Ionicons name="construct" size={48} color="#999" />
-          <Text style={styles.comingSoonTitle}>More Features Coming Soon</Text>
-          <Text style={styles.comingSoonText}>
-            AI-powered suggestions, automated decision learning, unified inbox, and insights are in development.
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data & Security</Text>
+          <View style={styles.dataGrid}>
+            <TouchableOpacity style={styles.dataCard}>
+              <Ionicons name="download-outline" size={24} color="#007AFF" />
+              <Text style={styles.dataCardText}>Export Data</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dataCard}>
+              <Ionicons name="cloud-download-outline" size={24} color="#34C759" />
+              <Text style={styles.dataCardText}>Backup</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dataCard}>
+              <Ionicons name="shield-checkmark-outline" size={24} color="#FF9500" />
+              <Text style={styles.dataCardText}>Audit Logs</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </View>
