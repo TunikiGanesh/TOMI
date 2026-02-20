@@ -842,23 +842,9 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Landing Screen Authentication Check"
-    - "User Registration Form"
-    - "User Login Form"
-    - "Business Setup Form"
-    - "Communication Preferences Form"
-    - "Knowledge Import Screen"
-    - "Tab Navigation Layout"
-    - "Home Screen Dashboard"
-    - "AI Demo Screen"
-    - "Conversations List Screen"
-    - "Conversation Detail Screen"
-    - "Decisions Screen"
-    - "Insights Screen"
-    - "Control Center Screen"
+  current_focus: []
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
