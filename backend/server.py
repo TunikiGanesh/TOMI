@@ -1248,6 +1248,1107 @@ async def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
+# ============ ENTERPRISE SERVICES INITIALIZATION ============
+
+# Initialize all enterprise services
+chatbot_service = create_chatbot_service(db)
+security_service = create_security_service(db)
+rbac_service = create_rbac_service(db)
+export_service = create_export_service(db)
+backup_service = create_backup_service(db)
+accounting_service = create_accounting_service(db)
+payroll_service = create_payroll_service(db)
+vendor_service = create_vendor_service(db)
+multi_branch_service = create_multi_branch_service(db)
+
+# ============ INTELLIGENT CHATBOT ENDPOINTS ============
+
+class ChatbotRequest(BaseModel):
+    question: str
+    include_web_search: bool = True
+
+@app.post("/api/chatbot/ask")
+async def chatbot_ask(
+    request: ChatbotRequest,
+    user: Dict = Depends(get_current_user)
+):
+    """Ask the intelligent chatbot any question about your business or general information"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Log audit event
+    await security_service.log_audit_event(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        action="chatbot_query",
+        resource_type="chatbot",
+        details={"question": request.question[:100]}
+    )
+    
+    result = await chatbot_service.generate_answer(
+        question=request.question,
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        include_web_search=request.include_web_search
+    )
+    
+    if not result['success']:
+        raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate answer'))
+    
+    return result
+
+@app.get("/api/chatbot/history")
+async def get_chat_history(
+    limit: int = 50,
+    user: Dict = Depends(get_current_user)
+):
+    """Get chatbot conversation history"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    history = await chatbot_service.get_chat_history(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        limit=limit
+    )
+    
+    return {"history": history, "count": len(history)}
+
+# ============ SECURITY & AUDIT ENDPOINTS ============
+
+@app.get("/api/security/audit-logs")
+async def get_audit_logs(
+    action: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    limit: int = 100,
+    user: Dict = Depends(get_current_user)
+):
+    """Get audit logs for the business (owner only)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Verify ownership
+    if not await security_service.verify_owner(user['user_id'], business['business_id']):
+        raise HTTPException(status_code=403, detail="Only owner can access audit logs")
+    
+    filters = {}
+    if action:
+        filters['action'] = action
+    if resource_type:
+        filters['resource_type'] = resource_type
+    
+    logs = await security_service.get_audit_logs(
+        business_id=business['business_id'],
+        filters=filters,
+        limit=limit
+    )
+    
+    return {"audit_logs": logs, "count": len(logs)}
+
+# ============ TEAM MANAGEMENT (RBAC) ENDPOINTS ============
+
+class TeamMemberRequest(BaseModel):
+    email: str
+    role: str
+    departments: List[str] = []
+
+@app.post("/api/team/invite")
+async def invite_team_member(
+    request: TeamMemberRequest,
+    user: Dict = Depends(get_current_user)
+):
+    """Invite a team member to the business"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Check permission
+    has_permission = await security_service.check_permission(
+        user['user_id'],
+        business['business_id'],
+        'manage_users'
+    )
+    
+    if not has_permission:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    result = await rbac_service.add_team_member(
+        business_id=business['business_id'],
+        user_email=request.email,
+        role=request.role,
+        invited_by=user['user_id'],
+        departments=request.departments
+    )
+    
+    if result['success']:
+        await security_service.log_audit_event(
+            business_id=business['business_id'],
+            user_id=user['user_id'],
+            action="invite_team_member",
+            resource_type="team",
+            details={"email": request.email, "role": request.role}
+        )
+    
+    return result
+
+@app.get("/api/team/members")
+async def get_team_members(
+    department: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Get all team members"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    members = await rbac_service.get_team_members(
+        business_id=business['business_id'],
+        department=department
+    )
+    
+    return {"members": members, "count": len(members)}
+
+@app.put("/api/team/members/{member_id}/role")
+async def update_member_role(
+    member_id: str,
+    new_role: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Update a team member's role"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Only owner can change roles
+    if not await security_service.verify_owner(user['user_id'], business['business_id']):
+        raise HTTPException(status_code=403, detail="Only owner can change roles")
+    
+    success = await rbac_service.update_member_role(
+        member_id=member_id,
+        new_role=new_role,
+        updated_by=user['user_id']
+    )
+    
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to update role")
+    
+    return {"success": True, "message": "Role updated"}
+
+@app.delete("/api/team/members/{member_id}")
+async def remove_team_member(
+    member_id: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Remove a team member"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    success = await rbac_service.remove_team_member(
+        member_id=member_id,
+        removed_by=user['user_id']
+    )
+    
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to remove member")
+    
+    await security_service.log_audit_event(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        action="remove_team_member",
+        resource_type="team",
+        resource_id=member_id
+    )
+    
+    return {"success": True, "message": "Member removed"}
+
+# ============ DATA EXPORT ENDPOINTS ============
+
+@app.post("/api/data/export-all")
+async def export_all_data(
+    format: str = 'json',
+    user: Dict = Depends(get_current_user)
+):
+    """Export all business data (owner only)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Verify ownership - this is a sensitive operation
+    if not await security_service.verify_owner(user['user_id'], business['business_id']):
+        raise HTTPException(status_code=403, detail="Only owner can export data")
+    
+    await security_service.log_audit_event(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        action="export_all_data",
+        resource_type="data_export",
+        details={"format": format}
+    )
+    
+    result = await export_service.export_all_data(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        format=format
+    )
+    
+    if not result['success']:
+        raise HTTPException(status_code=500, detail=result.get('error'))
+    
+    return result
+
+@app.post("/api/data/export")
+async def export_specific_data(
+    data_types: List[str],
+    user: Dict = Depends(get_current_user)
+):
+    """Export specific types of data"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await export_service.export_specific_data(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        data_types=data_types
+    )
+    
+    return result
+
+@app.get("/api/data/export-history")
+async def get_export_history(
+    limit: int = 50,
+    user: Dict = Depends(get_current_user)
+):
+    """Get history of data exports"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    history = await export_service.get_export_history(
+        business_id=business['business_id'],
+        limit=limit
+    )
+    
+    return {"history": history}
+
+@app.post("/api/data/backup")
+async def generate_backup(
+    include_sensitive: bool = False,
+    user: Dict = Depends(get_current_user)
+):
+    """Generate a backup for local storage"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Only owner can generate backups with sensitive data
+    if include_sensitive:
+        if not await security_service.verify_owner(user['user_id'], business['business_id']):
+            raise HTTPException(status_code=403, detail="Only owner can backup sensitive data")
+    
+    result = await backup_service.generate_backup_data(
+        business_id=business['business_id'],
+        user_id=user['user_id'],
+        include_sensitive=include_sensitive
+    )
+    
+    return result
+
+# ============ ACCOUNTING ENDPOINTS ============
+
+class AccountCreate(BaseModel):
+    name: str
+    account_type: str
+    parent_id: Optional[str] = None
+    opening_balance: float = 0.0
+    currency: str = 'INR'
+
+class TransactionCreate(BaseModel):
+    transaction_type: str
+    amount: float
+    description: str
+    from_account_id: Optional[str] = None
+    to_account_id: Optional[str] = None
+    category: Optional[str] = None
+    tax_type: str = 'none'
+    tax_rate: float = 0.0
+    vendor_id: Optional[str] = None
+    customer_id: Optional[str] = None
+    reference_number: Optional[str] = None
+
+class InvoiceCreate(BaseModel):
+    customer_id: str
+    items: List[Dict]
+    due_date: datetime
+    tax_type: str = 'gst'
+    tax_rate: float = 18.0
+    notes: Optional[str] = None
+
+@app.post("/api/accounting/accounts")
+async def create_account(
+    request: AccountCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Create a new account in chart of accounts"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await accounting_service.create_account(
+        business_id=business['business_id'],
+        **request.dict()
+    )
+    
+    return result
+
+@app.get("/api/accounting/accounts")
+async def get_accounts(user: Dict = Depends(get_current_user)):
+    """Get all accounts"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    accounts = await db.accounts.find(
+        {"business_id": business['business_id']},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    return {"accounts": accounts}
+
+@app.post("/api/accounting/transactions")
+async def record_transaction(
+    request: TransactionCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Record a financial transaction"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await accounting_service.record_transaction(
+        business_id=business['business_id'],
+        recorded_by=user['user_id'],
+        **request.dict()
+    )
+    
+    if result['success']:
+        await security_service.log_audit_event(
+            business_id=business['business_id'],
+            user_id=user['user_id'],
+            action="record_transaction",
+            resource_type="transaction",
+            resource_id=result.get('transaction_id'),
+            details={"amount": request.amount, "type": request.transaction_type}
+        )
+    
+    return result
+
+@app.get("/api/accounting/transactions")
+async def get_transactions(
+    limit: int = 100,
+    transaction_type: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Get transactions"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id']}
+    if transaction_type:
+        query['type'] = transaction_type
+    
+    transactions = await db.transactions.find(
+        query,
+        {"_id": 0}
+    ).sort("date", -1).limit(limit).to_list(limit)
+    
+    return {"transactions": transactions}
+
+@app.post("/api/accounting/invoices")
+async def create_invoice(
+    request: InvoiceCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Create a customer invoice"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await accounting_service.create_invoice(
+        business_id=business['business_id'],
+        created_by=user['user_id'],
+        **request.dict()
+    )
+    
+    return result
+
+@app.get("/api/accounting/invoices")
+async def get_invoices(
+    status: Optional[str] = None,
+    limit: int = 100,
+    user: Dict = Depends(get_current_user)
+):
+    """Get invoices"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id']}
+    if status:
+        query['status'] = status
+    
+    invoices = await db.invoices.find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    return {"invoices": invoices}
+
+@app.post("/api/accounting/invoices/{invoice_id}/payment")
+async def record_invoice_payment(
+    invoice_id: str,
+    amount: float,
+    payment_method: str,
+    reference: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Record payment for an invoice"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await accounting_service.record_payment(
+        business_id=business['business_id'],
+        invoice_id=invoice_id,
+        amount=amount,
+        payment_method=payment_method,
+        reference=reference
+    )
+    
+    return result
+
+@app.get("/api/accounting/summary")
+async def get_financial_summary(
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Get financial summary report"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    summary = await accounting_service.get_financial_summary(
+        business_id=business['business_id'],
+        start_date=start_date,
+        end_date=end_date
+    )
+    
+    return summary
+
+# ============ PAYROLL ENDPOINTS ============
+
+class EmployeeCreate(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+    role: str = 'employee'
+    department: Optional[str] = None
+    salary: float = 0.0
+    salary_type: str = 'monthly'
+    bank_details: Optional[Dict] = None
+
+@app.post("/api/payroll/employees")
+async def add_employee(
+    request: EmployeeCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Add an employee"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await payroll_service.add_employee(
+        business_id=business['business_id'],
+        added_by=user['user_id'],
+        **request.dict()
+    )
+    
+    return result
+
+@app.get("/api/payroll/employees")
+async def get_employees(
+    department: Optional[str] = None,
+    status: str = 'active',
+    user: Dict = Depends(get_current_user)
+):
+    """Get all employees"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id'], "status": status}
+    if department:
+        query['department'] = department
+    
+    employees = await db.employees.find(
+        query,
+        {"_id": 0}
+    ).to_list(1000)
+    
+    return {"employees": employees}
+
+@app.post("/api/payroll/process")
+async def process_payroll(
+    period_start: datetime,
+    period_end: datetime,
+    employee_ids: Optional[List[str]] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Process payroll for employees (requires approval)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await payroll_service.process_payroll(
+        business_id=business['business_id'],
+        period_start=period_start,
+        period_end=period_end,
+        employee_ids=employee_ids,
+        processed_by=user['user_id']
+    )
+    
+    if result['success']:
+        await security_service.log_audit_event(
+            business_id=business['business_id'],
+            user_id=user['user_id'],
+            action="process_payroll",
+            resource_type="payroll",
+            resource_id=result.get('payroll_id'),
+            details={"total_net": result.get('total_net')}
+        )
+    
+    return result
+
+@app.post("/api/payroll/{payroll_id}/approve")
+async def approve_payroll(
+    payroll_id: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Approve payroll (owner only)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Only owner can approve payroll
+    if not await security_service.verify_owner(user['user_id'], business['business_id']):
+        raise HTTPException(status_code=403, detail="Only owner can approve payroll")
+    
+    result = await payroll_service.approve_payroll(
+        payroll_id=payroll_id,
+        approved_by=user['user_id']
+    )
+    
+    if result['success']:
+        await security_service.log_audit_event(
+            business_id=business['business_id'],
+            user_id=user['user_id'],
+            action="approve_payroll",
+            resource_type="payroll",
+            resource_id=payroll_id
+        )
+    
+    return result
+
+@app.get("/api/payroll/history")
+async def get_payroll_history(
+    limit: int = 50,
+    user: Dict = Depends(get_current_user)
+):
+    """Get payroll history"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    payrolls = await db.payroll.find(
+        {"business_id": business['business_id']},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    return {"payrolls": payrolls}
+
+# ============ VENDOR ENDPOINTS ============
+
+class VendorCreate(BaseModel):
+    name: str
+    contact_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    category: Optional[str] = None
+    tax_id: Optional[str] = None
+    payment_terms: str = 'net30'
+
+class PurchaseOrderCreate(BaseModel):
+    vendor_id: str
+    items: List[Dict]
+    delivery_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+@app.post("/api/vendors")
+async def add_vendor(
+    request: VendorCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Add a vendor"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await vendor_service.add_vendor(
+        business_id=business['business_id'],
+        added_by=user['user_id'],
+        **request.dict()
+    )
+    
+    return result
+
+@app.get("/api/vendors")
+async def get_vendors(
+    category: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Get all vendors"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id'], "status": "active"}
+    if category:
+        query['category'] = category
+    
+    vendors = await db.vendors.find(
+        query,
+        {"_id": 0}
+    ).to_list(1000)
+    
+    return {"vendors": vendors}
+
+@app.post("/api/vendors/purchase-orders")
+async def create_purchase_order(
+    request: PurchaseOrderCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Create a purchase order (requires approval)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await vendor_service.create_purchase_order(
+        business_id=business['business_id'],
+        created_by=user['user_id'],
+        requires_approval=True,
+        **request.dict()
+    )
+    
+    return result
+
+@app.get("/api/vendors/purchase-orders")
+async def get_purchase_orders(
+    status: Optional[str] = None,
+    limit: int = 100,
+    user: Dict = Depends(get_current_user)
+):
+    """Get purchase orders"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id']}
+    if status:
+        query['status'] = status
+    
+    orders = await db.purchase_orders.find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    return {"purchase_orders": orders}
+
+@app.post("/api/vendors/purchase-orders/{po_id}/approve")
+async def approve_purchase_order(
+    po_id: str,
+    comments: Optional[str] = None,
+    user: Dict = Depends(get_current_user)
+):
+    """Approve a purchase order (owner only)"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Only owner can approve POs
+    if not await security_service.verify_owner(user['user_id'], business['business_id']):
+        raise HTTPException(status_code=403, detail="Only owner can approve purchase orders")
+    
+    result = await vendor_service.approve_purchase_order(
+        po_id=po_id,
+        approved_by=user['user_id'],
+        comments=comments
+    )
+    
+    if result['success']:
+        await security_service.log_audit_event(
+            business_id=business['business_id'],
+            user_id=user['user_id'],
+            action="approve_purchase_order",
+            resource_type="purchase_order",
+            resource_id=po_id
+        )
+    
+    return result
+
+@app.post("/api/vendors/purchase-orders/{po_id}/reject")
+async def reject_purchase_order(
+    po_id: str,
+    reason: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Reject a purchase order"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await vendor_service.reject_purchase_order(
+        po_id=po_id,
+        rejected_by=user['user_id'],
+        reason=reason
+    )
+    
+    return result
+
+# ============ MULTI-BRANCH ENDPOINTS ============
+
+class BranchCreate(BaseModel):
+    name: str
+    address: str
+    phone: Optional[str] = None
+    manager_id: Optional[str] = None
+
+@app.post("/api/branches")
+async def create_branch(
+    request: BranchCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Create a new branch"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await multi_branch_service.create_branch(
+        business_id=business['business_id'],
+        created_by=user['user_id'],
+        **request.dict()
+    )
+    
+    return result
+
+@app.get("/api/branches")
+async def get_branches(user: Dict = Depends(get_current_user)):
+    """Get all branches"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    branches = await multi_branch_service.get_branches(business['business_id'])
+    
+    return {"branches": branches}
+
+@app.get("/api/branches/{branch_id}/summary")
+async def get_branch_summary(
+    branch_id: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Get summary for a specific branch"""
+    
+    summary = await multi_branch_service.get_branch_summary(branch_id)
+    
+    return summary
+
+# ============ CUSTOMER MANAGEMENT ENDPOINTS ============
+
+class CustomerCreate(BaseModel):
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    tags: List[str] = []
+
+@app.post("/api/customers")
+async def add_customer(
+    request: CustomerCreate,
+    user: Dict = Depends(get_current_user)
+):
+    """Add a customer"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    customer_id = f"cust_{uuid.uuid4().hex[:8]}"
+    
+    customer_doc = {
+        "customer_id": customer_id,
+        "business_id": business['business_id'],
+        **request.dict(),
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.customers.insert_one(customer_doc)
+    
+    return {"success": True, "customer_id": customer_id}
+
+@app.get("/api/customers")
+async def get_customers(
+    search: Optional[str] = None,
+    limit: int = 100,
+    user: Dict = Depends(get_current_user)
+):
+    """Get all customers"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    query = {"business_id": business['business_id']}
+    
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}}
+        ]
+    
+    customers = await db.customers.find(
+        query,
+        {"_id": 0}
+    ).limit(limit).to_list(limit)
+    
+    return {"customers": customers, "count": len(customers)}
+
+@app.get("/api/customers/{customer_id}")
+async def get_customer(
+    customer_id: str,
+    user: Dict = Depends(get_current_user)
+):
+    """Get a specific customer with their history"""
+    
+    business = await db.businesses.find_one(
+        {"owner_id": user['user_id']},
+        {"_id": 0}
+    )
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    customer = await db.customers.find_one(
+        {"customer_id": customer_id, "business_id": business['business_id']},
+        {"_id": 0}
+    )
+    
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Get customer's conversations
+    conversations = await db.conversations.find(
+        {"business_id": business['business_id'], "contact_info": {"$in": [customer.get('email'), customer.get('phone')]}},
+        {"_id": 0}
+    ).limit(20).to_list(20)
+    
+    # Get customer's invoices
+    invoices = await db.invoices.find(
+        {"customer_id": customer_id},
+        {"_id": 0}
+    ).limit(20).to_list(20)
+    
+    customer['conversations'] = conversations
+    customer['invoices'] = invoices
+    
+    return customer
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
