@@ -27,6 +27,7 @@ class TOMIBackendTester:
         self.conversation_id = None
         self.document_id = None
         self.automation_id = None
+        self.customer_id = None
         self.results = {
             "total_tests": 0,
             "passed": 0,
