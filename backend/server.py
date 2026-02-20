@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Header, Response, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Dict, Any
@@ -13,10 +14,20 @@ import httpx
 import bcrypt
 import jwt
 import shutil
+import json
 from document_processor import DocumentProcessor
 from llm_service import llm_service
 from channels import ChannelSimulator
 from subscription_service import get_subscription_plans, create_checkout_session, verify_subscription
+from chatbot_service import create_chatbot_service
+from security_service import create_security_service, create_rbac_service
+from data_export_service import create_export_service, create_backup_service
+from enterprise_service import (
+    create_accounting_service,
+    create_payroll_service,
+    create_vendor_service,
+    create_multi_branch_service
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
