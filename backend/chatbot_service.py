@@ -90,12 +90,18 @@ class ChatbotService:
                 ).limit(10).to_list(10)
                 results['conversations'] = convos
                 
-                # Also search messages
-                messages = await self.db.messages.find(
-                    {"content": {"$regex": query, "$options": "i"}},
-                    {"_id": 0}
-                ).limit(20).to_list(20)
-                results['messages'] = messages
+                # Also search messages - only within conversations for this business
+                if convos:
+                    conv_ids = [c.get('conversation_id') for c in convos if c.get('conversation_id')]
+                    if conv_ids:
+                        messages = await self.db.messages.find(
+                            {
+                                "conversation_id": {"$in": conv_ids},
+                                "content": {"$regex": query, "$options": "i"}
+                            },
+                            {"_id": 0}
+                        ).limit(20).to_list(20)
+                        results['messages'] = messages
             
             # Search customers (from conversations)
             if 'customers' in search_types:
