@@ -84,8 +84,8 @@ def create_checkout_session(plan_id: str, user_id: str, currency: str = 'inr') -
                 'quantity': 1,
             }],
             mode='subscription',
-            success_url='https://owner-command-center.preview.emergentagent.com/subscription-success',
-            cancel_url='https://owner-command-center.preview.emergentagent.com/(tabs)/control',
+            success_url='https://tomi-owner-mind.preview.emergentagent.com/subscription-success',
+            cancel_url='https://tomi-owner-mind.preview.emergentagent.com/(tabs)/control',
             metadata={
                 'user_id': user_id,
                 'plan_id': plan_id

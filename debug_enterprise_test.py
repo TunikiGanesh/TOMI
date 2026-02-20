@@ -8,7 +8,7 @@ import json
 import uuid
 
 # Configuration
-BASE_URL = "https://owner-command-center.preview.emergentagent.com/api"
+BASE_URL = "https://tomi-owner-mind.preview.emergentagent.com/api"
 
 def test_specific_endpoints():
     # Register a new user first

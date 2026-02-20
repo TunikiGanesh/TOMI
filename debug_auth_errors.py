@@ -6,7 +6,7 @@ Debug authentication error handling
 import requests
 import json
 
-BASE_URL = "https://owner-command-center.preview.emergentagent.com/api"
+BASE_URL = "https://tomi-owner-mind.preview.emergentagent.com/api"
 
 def test_unauth_endpoints():
     """Test endpoints without authentication"""

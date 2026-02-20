@@ -12,7 +12,7 @@ from pathlib import Path
 import uuid
 
 # Configuration
-BASE_URL = "https://owner-command-center.preview.emergentagent.com/api"
+BASE_URL = "https://tomi-owner-mind.preview.emergentagent.com/api"
 TEST_EMAIL = f"test.owner.{uuid.uuid4().hex[:8]}@example.com"
 TEST_PASSWORD = "SecureTestPassword123!"
 TEST_NAME = "Sarah Johnson"
