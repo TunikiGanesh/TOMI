@@ -818,6 +818,16 @@ Phone: +1-555-123-4567
         self.test_channel_simulator_email()
         self.test_channel_simulator_sms()
         
+        # New Enterprise Endpoints
+        print("\n🏢 NEW ENTERPRISE ENDPOINTS")
+        self.test_chatbot_ask()
+        self.test_create_customer()
+        self.test_get_customers()
+        self.test_accounting_transactions()
+        self.test_team_members()
+        self.test_data_export_all()
+        self.test_audit_logs()
+        
         # Error Handling
         print("\n🛡️ ERROR HANDLING TESTS")
         self.test_auth_error_handling()
