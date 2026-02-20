@@ -336,6 +336,118 @@ async def get_me(user: Dict = Depends(get_current_user)):
     """Get current user info"""
     return user
 
+# Auth callback for Google OAuth redirect (handles mobile deep linking)
+@app.get("/auth-callback")
+async def auth_callback(request: Request):
+    """
+    Handle Google OAuth callback and redirect to mobile app.
+    This endpoint receives the session_id from Emergent Auth
+    and generates an HTML page that redirects to the mobile app.
+    """
+    from fastapi.responses import HTMLResponse
+    
+    # Get the full URL including hash
+    full_url = str(request.url)
+    
+    # For mobile apps, we need to:
+    # 1. Extract session_id from the URL (it comes in the hash/fragment)
+    # 2. Redirect to the app using the custom scheme (tomi://)
+    
+    # The hash fragment is not sent to the server, so we need to use JS
+    # to extract it and redirect to the mobile app
+    
+    html_content = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Completing Sign In...</title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                background: #f5f5f5;
+            }
+            .container {
+                text-align: center;
+                padding: 40px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #007AFF;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            h2 { color: #333; margin-bottom: 10px; }
+            p { color: #666; }
+            .error { color: #EA4335; display: none; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="spinner"></div>
+            <h2>Completing Sign In</h2>
+            <p id="status">Redirecting to TOMI app...</p>
+            <p class="error" id="error">If the app doesn't open, please go back and try again.</p>
+        </div>
+        <script>
+            (function() {
+                // Get session_id from hash
+                var hash = window.location.hash;
+                var match = hash.match(/session_id=([^&]+)/);
+                
+                if (match) {
+                    var sessionId = match[1];
+                    
+                    // Try to open the mobile app with the session_id
+                    var appUrl = 'tomi://auth-callback#session_id=' + sessionId;
+                    
+                    // Also prepare the web fallback URL
+                    var webUrl = window.location.origin + '/auth-callback#session_id=' + sessionId;
+                    
+                    // Try to open the app
+                    window.location.href = appUrl;
+                    
+                    // If app doesn't open after 2.5 seconds, show the error
+                    setTimeout(function() {
+                        document.getElementById('status').textContent = 'App not responding...';
+                        document.getElementById('error').style.display = 'block';
+                        
+                        // Try web fallback
+                        setTimeout(function() {
+                            // If we're still on this page, the app didn't open
+                            // We can't know for sure, so just leave the error message
+                        }, 500);
+                    }, 2500);
+                } else {
+                    document.getElementById('status').textContent = 'No session found';
+                    document.getElementById('error').textContent = 'Authentication failed. Please try again.';
+                    document.getElementById('error').style.display = 'block';
+                }
+            })();
+        </script>
+    </body>
+    </html>
+    '''
+    
+    return HTMLResponse(content=html_content)
+
 @app.post("/api/auth/logout")
 async def logout(response: Response, user: Dict = Depends(get_current_user)):
     """Logout user"""
