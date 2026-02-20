@@ -698,12 +698,12 @@ Phone: +1-555-123-4567
         
         if response and response.status_code == 200:
             result = response.json()
-            if "success" in result and "export_data" in result:
-                if result["success"]:
+            if "success" in result and "export" in result:
+                if result["success"] and "export_id" in result["export"]:
                     self.log_test("Data Export All", True)
                     return True
                 else:
-                    self.log_test("Data Export All", False, "Export marked as unsuccessful")
+                    self.log_test("Data Export All", False, "Export marked as unsuccessful or missing export_id")
             else:
                 self.log_test("Data Export All", False, "Missing required fields in export response")
         else:
