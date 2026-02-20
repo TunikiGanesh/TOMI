@@ -354,11 +354,67 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  primaryAction: {
+    backgroundColor: '#007AFF',
+  },
+  primaryActionText: {
+    color: '#fff',
+  },
   actionText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  actionSubtext: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  enterpriseGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+    gap: 8,
+  },
+  enterpriseCard: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+  },
+  enterpriseIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enterpriseText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  dataGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dataCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  dataCardText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
     textAlign: 'center',
   },
   comingSoonSection: {
