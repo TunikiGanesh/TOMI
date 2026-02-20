@@ -582,6 +582,151 @@ Phone: +1-555-123-4567
             self.log_test("Channel Simulator SMS", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
         return False
     
+    # ============ NEW ENTERPRISE ENDPOINTS ============
+    
+    def test_chatbot_ask(self):
+        """Test POST /api/chatbot/ask"""
+        data = {
+            "question": "What are the main services offered by my business and their pricing structure?",
+            "include_web_search": False
+        }
+        
+        response = self.make_request("POST", "/chatbot/ask", data)
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "answer" in result and "success" in result:
+                if result["success"] and len(result["answer"]) > 50:
+                    self.log_test("Chatbot Ask", True)
+                    return True
+                else:
+                    self.log_test("Chatbot Ask", False, "Empty or too short answer from chatbot")
+            else:
+                self.log_test("Chatbot Ask", False, "Missing required fields in chatbot response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Chatbot Ask", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+    
+    def test_create_customer(self):
+        """Test POST /api/customers"""
+        data = {
+            "name": "Emily Chen",
+            "email": "emily.chen@example.com", 
+            "phone": "+1-555-789-0123",
+            "address": "456 Business Ave, Austin, TX 78701",
+            "notes": "Interested in monthly business coaching services",
+            "tags": ["potential_client", "monthly_retainer"]
+        }
+        
+        response = self.make_request("POST", "/customers", data)
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "success" in result and "customer_id" in result:
+                if result["success"]:
+                    self.customer_id = result["customer_id"]
+                    self.log_test("Create Customer", True)
+                    return True
+                else:
+                    self.log_test("Create Customer", False, "Success field is false")
+            else:
+                self.log_test("Create Customer", False, "Missing required fields in customer response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Create Customer", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+    
+    def test_get_customers(self):
+        """Test GET /api/customers"""
+        response = self.make_request("GET", "/customers")
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "customers" in result and "count" in result:
+                # Should have at least the customer we created
+                if result["count"] > 0:
+                    self.log_test("Get Customers", True)
+                    return True
+                else:
+                    self.log_test("Get Customers", False, "No customers found after creation")
+            else:
+                self.log_test("Get Customers", False, "Missing expected fields in customers response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Get Customers", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+    
+    def test_accounting_transactions(self):
+        """Test GET /api/accounting/transactions"""
+        response = self.make_request("GET", "/accounting/transactions")
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "transactions" in result:
+                self.log_test("Get Accounting Transactions", True)
+                return True
+            else:
+                self.log_test("Get Accounting Transactions", False, "Missing transactions field in response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Get Accounting Transactions", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+    
+    def test_team_members(self):
+        """Test GET /api/team/members"""
+        response = self.make_request("GET", "/team/members")
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "members" in result and "count" in result:
+                self.log_test("Get Team Members", True)
+                return True
+            else:
+                self.log_test("Get Team Members", False, "Missing expected fields in team response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Get Team Members", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+    
+    def test_data_export_all(self):
+        """Test POST /api/data/export-all"""
+        data = {"format": "json"}
+        
+        response = self.make_request("POST", "/data/export-all", data)
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "success" in result and "export_data" in result:
+                if result["success"]:
+                    self.log_test("Data Export All", True)
+                    return True
+                else:
+                    self.log_test("Data Export All", False, "Export marked as unsuccessful")
+            else:
+                self.log_test("Data Export All", False, "Missing required fields in export response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Data Export All", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+    
+    def test_audit_logs(self):
+        """Test GET /api/security/audit-logs"""
+        response = self.make_request("GET", "/security/audit-logs")
+        
+        if response and response.status_code == 200:
+            result = response.json()
+            if "audit_logs" in result and "count" in result:
+                # Should have audit logs from previous operations
+                self.log_test("Get Audit Logs", True)
+                return True
+            else:
+                self.log_test("Get Audit Logs", False, "Missing expected fields in audit response")
+        else:
+            error_detail = response.json().get("detail", "Unknown error") if response else "No response"
+            self.log_test("Get Audit Logs", False, f"Status: {response.status_code if response else 'None'}, Error: {error_detail}")
+        return False
+
     # ============ ERROR HANDLING TESTS ============
     
     def test_auth_error_handling(self):
