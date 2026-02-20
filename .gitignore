@@ -81,3 +81,7 @@ android-sdk/
 
 # Note: .env files are NOT ignored because Emergent deployment needs them
 # The deployment system automatically updates .env files with production values
+-e 
+# Environment files
+*.env
+*.env.*
