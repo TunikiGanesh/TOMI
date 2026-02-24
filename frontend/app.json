@@ -4,7 +4,7 @@
     "slug": "tomi-owner-mind",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/tomi-icon.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "tomi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -16,7 +16,7 @@
       "package": "com.tomi.ownermind",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/tomi-adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#007AFF"
       },
       "permissions": [
@@ -39,14 +39,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/tomi-favicon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/tomi-splash.png",
+          "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#007AFF"
