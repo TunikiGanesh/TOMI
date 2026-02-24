@@ -338,7 +338,7 @@ async def get_me(user: Dict = Depends(get_current_user)):
     return user
 
 # Auth callback for Google OAuth redirect (handles mobile deep linking)
-@app.get("/auth-callback")
+@app.get("/api/auth-callback")
 async def auth_callback(request: Request):
     """
     Handle Google OAuth callback and redirect to mobile app.
