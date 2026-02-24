@@ -3,13 +3,14 @@ TOMI Intelligent Knowledge Chatbot Service
 Hybrid search: internal business data + live web search via DuckDuckGo
 """
 import os
+import re
 import logging
 import time
 from typing import List, Dict, Optional, Any
 from datetime import datetime, timezone
 from collections import defaultdict
+import httpx
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-from duckduckgo_search import DDGS
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -115,19 +116,33 @@ class ChatbotService:
     # ---- Web Search (DuckDuckGo) ----
 
     async def search_web(self, query: str, max_results: int = 5) -> Dict[str, Any]:
-        """Live web search via DuckDuckGo — no API key required."""
+        """Live web search via DuckDuckGo HTML lite — no API key required."""
         results: Dict[str, Any] = {'success': False, 'snippets': [], 'sources': []}
         try:
-            with DDGS() as ddgs:
-                hits = list(ddgs.text(query, max_results=max_results))
-            for h in hits:
-                results['snippets'].append({
-                    'title': h.get('title', ''),
-                    'body': h.get('body', ''),
-                    'url': h.get('href', ''),
-                })
-                results['sources'].append(h.get('href', ''))
-            results['success'] = bool(hits)
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+                resp = await client.post(
+                    'https://html.duckduckgo.com/html/',
+                    data={'q': query},
+                    headers={'User-Agent': 'Mozilla/5.0 (compatible; TOMI/1.0)'},
+                )
+            if resp.status_code == 200:
+                html = resp.text
+                titles = re.findall(r'class="result__a"[^>]*>(.*?)</a>', html, re.DOTALL)
+                snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
+                urls = re.findall(r'class="result__url"[^>]*href="([^"]+)"', html)
+                for i in range(min(max_results, len(titles))):
+                    clean_title = re.sub(r'<[^>]+>', '', titles[i]).strip()
+                    clean_body = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else ''
+                    # DuckDuckGo wraps URLs in a redirect; extract the real URL
+                    raw_url = urls[i] if i < len(urls) else ''
+                    real_url = raw_url
+                    ud_match = re.search(r'uddg=([^&]+)', raw_url)
+                    if ud_match:
+                        from urllib.parse import unquote
+                        real_url = unquote(ud_match.group(1))
+                    results['snippets'].append({'title': clean_title, 'body': clean_body, 'url': real_url})
+                    results['sources'].append(real_url)
+                results['success'] = bool(titles)
         except Exception as e:
             logger.error(f"Web search error: {e}")
             results['error'] = str(e)
