@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,6 +31,8 @@ interface Message {
       finances: number;
     };
     web_searched?: boolean;
+    web_results_count?: number;
+    web_sources?: string[];
   };
 }
 
@@ -41,13 +44,19 @@ export default function ChatbotScreen() {
   const [loading, setLoading] = useState(false);
   const [includeWebSearch, setIncludeWebSearch] = useState(true);
 
-  // Welcome message
   useEffect(() => {
     setMessages([
       {
         id: 'welcome',
         type: 'assistant',
-        content: "Hello! I'm TOMI, your intelligent business assistant. I can answer questions about:\n\n• Your business data & documents\n• Customer information\n• Financial records\n• Conversations history\n• General business advice\n\nAsk me anything!",
+        content:
+          "Hello! I'm TOMI, your intelligent business assistant. I can answer questions about:\n\n" +
+          '- Your business data & documents\n' +
+          '- Customer information\n' +
+          '- Financial records\n' +
+          '- Conversations history\n' +
+          '- General business advice (with live web search)\n\n' +
+          'Ask me anything!',
         timestamp: new Date(),
       },
     ]);
@@ -93,18 +102,20 @@ export default function ChatbotScreen() {
         };
         setMessages(prev => [...prev, assistantMessage]);
       } else {
+        const errMsg = data.error || "I couldn't process your request. Please try again.";
         setMessages(prev => [
           ...prev,
           {
             id: (Date.now() + 1).toString(),
             type: 'assistant',
-            content: "I'm sorry, I couldn't process your request. Please try again.",
+            content: errMsg.includes('Rate limit')
+              ? 'You are sending messages too fast. Please wait a moment and try again.'
+              : `Sorry, ${errMsg}`,
             timestamp: new Date(),
           },
         ]);
       }
     } catch (error) {
-      console.error('Chatbot error:', error);
       setMessages(prev => [
         ...prev,
         {
@@ -121,65 +132,86 @@ export default function ChatbotScreen() {
 
   const renderMessage = (message: Message) => {
     const isUser = message.type === 'user';
-
     return (
       <View
         key={message.id}
-        style={[
-          styles.messageContainer,
-          isUser ? styles.userMessage : styles.assistantMessage,
-        ]}
+        data-testid={`chat-message-${message.id}`}
+        style={[styles.messageContainer, isUser ? styles.userMessage : styles.assistantMessage]}
       >
         {!isUser && (
           <View style={styles.avatarContainer}>
             <Ionicons name="sparkles" size={20} color="#007AFF" />
           </View>
         )}
-        <View
-          style={[
-            styles.messageBubble,
-            isUser ? styles.userBubble : styles.assistantBubble,
-          ]}
-        >
+        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
           <Text style={[styles.messageText, isUser && styles.userMessageText]}>
             {message.content}
           </Text>
-          
+
           {message.sources && (
             <View style={styles.sourcesContainer}>
-              <Text style={styles.sourcesTitle}>Sources used:</Text>
+              <Text style={styles.sourcesTitle}>Sources:</Text>
               <View style={styles.sourcesTags}>
-                {message.sources.internal_data_found?.documents > 0 && (
-                  <View style={styles.sourceTag}>
+                {(message.sources.internal_data_found?.documents ?? 0) > 0 && (
+                  <View style={styles.sourceTag} data-testid="source-tag-documents">
                     <Ionicons name="document-text" size={12} color="#666" />
                     <Text style={styles.sourceTagText}>
-                      {message.sources.internal_data_found.documents} docs
+                      {message.sources.internal_data_found!.documents} docs
                     </Text>
                   </View>
                 )}
-                {message.sources.internal_data_found?.conversations > 0 && (
-                  <View style={styles.sourceTag}>
+                {(message.sources.internal_data_found?.conversations ?? 0) > 0 && (
+                  <View style={styles.sourceTag} data-testid="source-tag-conversations">
                     <Ionicons name="chatbubbles" size={12} color="#666" />
                     <Text style={styles.sourceTagText}>
-                      {message.sources.internal_data_found.conversations} chats
+                      {message.sources.internal_data_found!.conversations} chats
                     </Text>
                   </View>
                 )}
-                {message.sources.internal_data_found?.customers > 0 && (
-                  <View style={styles.sourceTag}>
+                {(message.sources.internal_data_found?.customers ?? 0) > 0 && (
+                  <View style={styles.sourceTag} data-testid="source-tag-customers">
                     <Ionicons name="people" size={12} color="#666" />
                     <Text style={styles.sourceTagText}>
-                      {message.sources.internal_data_found.customers} customers
+                      {message.sources.internal_data_found!.customers} customers
                     </Text>
                   </View>
                 )}
-                {message.sources.web_searched && (
-                  <View style={styles.sourceTag}>
-                    <Ionicons name="globe" size={12} color="#666" />
-                    <Text style={styles.sourceTagText}>Web</Text>
+                {(message.sources.internal_data_found?.finances ?? 0) > 0 && (
+                  <View style={styles.sourceTag} data-testid="source-tag-finances">
+                    <Ionicons name="cash" size={12} color="#666" />
+                    <Text style={styles.sourceTagText}>
+                      {message.sources.internal_data_found!.finances} records
+                    </Text>
+                  </View>
+                )}
+                {message.sources.web_searched && (message.sources.web_results_count ?? 0) > 0 && (
+                  <View style={styles.sourceTag} data-testid="source-tag-web">
+                    <Ionicons name="globe" size={12} color="#007AFF" />
+                    <Text style={[styles.sourceTagText, { color: '#007AFF' }]}>
+                      {message.sources.web_results_count} web results
+                    </Text>
                   </View>
                 )}
               </View>
+
+              {/* Web source URLs */}
+              {message.sources.web_sources && message.sources.web_sources.length > 0 && (
+                <View style={styles.webSourcesList}>
+                  {message.sources.web_sources.slice(0, 3).map((url, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      data-testid={`web-source-link-${idx}`}
+                      onPress={() => Linking.openURL(url)}
+                      style={styles.webSourceLink}
+                    >
+                      <Ionicons name="link" size={10} color="#007AFF" />
+                      <Text style={styles.webSourceUrl} numberOfLines={1}>
+                        {url.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -188,17 +220,16 @@ export default function ChatbotScreen() {
   };
 
   const suggestedQuestions = [
-    "What are my top customers?",
-    "Show me recent conversations",
+    'What are my top customers?',
+    'Show me recent conversations',
     "What's my financial summary?",
-    "Any pending invoices?",
+    'Any pending invoices?',
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+    <SafeAreaView style={styles.container} data-testid="chatbot-screen">
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="chatbot-back-btn">
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
@@ -208,6 +239,7 @@ export default function ChatbotScreen() {
         <TouchableOpacity
           style={styles.webSearchToggle}
           onPress={() => setIncludeWebSearch(!includeWebSearch)}
+          data-testid="web-search-toggle"
         >
           <Ionicons
             name={includeWebSearch ? 'globe' : 'globe-outline'}
@@ -222,7 +254,6 @@ export default function ChatbotScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        {/* Messages */}
         <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
@@ -230,9 +261,9 @@ export default function ChatbotScreen() {
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
           {messages.map(renderMessage)}
-          
+
           {loading && (
-            <View style={[styles.messageContainer, styles.assistantMessage]}>
+            <View style={[styles.messageContainer, styles.assistantMessage]} data-testid="chatbot-loading">
               <View style={styles.avatarContainer}>
                 <Ionicons name="sparkles" size={20} color="#007AFF" />
               </View>
@@ -242,18 +273,16 @@ export default function ChatbotScreen() {
               </View>
             </View>
           )}
-          
-          {/* Suggested questions for empty state */}
+
           {messages.length === 1 && (
-            <View style={styles.suggestionsContainer}>
+            <View style={styles.suggestionsContainer} data-testid="suggestions-container">
               <Text style={styles.suggestionsTitle}>Try asking:</Text>
               {suggestedQuestions.map((question, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.suggestionButton}
-                  onPress={() => {
-                    setInputText(question);
-                  }}
+                  data-testid={`suggestion-btn-${index}`}
+                  onPress={() => setInputText(question)}
                 >
                   <Ionicons name="chatbubble-outline" size={16} color="#007AFF" />
                   <Text style={styles.suggestionText}>{question}</Text>
@@ -263,7 +292,6 @@ export default function ChatbotScreen() {
           )}
         </ScrollView>
 
-        {/* Input Area */}
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -273,11 +301,13 @@ export default function ChatbotScreen() {
             multiline
             maxLength={1000}
             editable={!loading}
+            data-testid="chatbot-input"
           />
           <TouchableOpacity
             style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
             onPress={sendMessage}
             disabled={!inputText.trim() || loading}
+            data-testid="chatbot-send-btn"
           >
             <Ionicons name="send" size={20} color="#fff" />
           </TouchableOpacity>
@@ -288,10 +318,7 @@ export default function ChatbotScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,43 +328,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  backButton: {
-    padding: 4,
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  webSearchToggle: {
-    padding: 4,
-  },
-  chatContainer: {
-    flex: 1,
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    padding: 16,
-    paddingBottom: 20,
-  },
-  messageContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-start',
-  },
-  userMessage: {
-    justifyContent: 'flex-end',
-  },
-  assistantMessage: {
-    justifyContent: 'flex-start',
-  },
+  backButton: { padding: 4 },
+  headerTitleContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#000' },
+  webSearchToggle: { padding: 4 },
+  chatContainer: { flex: 1 },
+  messagesContainer: { flex: 1 },
+  messagesContent: { padding: 16, paddingBottom: 20 },
+  messageContainer: { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-start' },
+  userMessage: { justifyContent: 'flex-end' },
+  assistantMessage: { justifyContent: 'flex-start' },
   avatarContainer: {
     width: 32,
     height: 32,
@@ -347,48 +347,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 8,
   },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
-  },
-  userBubble: {
-    backgroundColor: '#007AFF',
-    borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    backgroundColor: '#f0f0f0',
-    borderBottomLeftRadius: 4,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#333',
-  },
-  userMessageText: {
-    color: '#fff',
-  },
-  thinkingText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-  },
-  sourcesContainer: {
-    marginTop: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-  },
-  sourcesTitle: {
-    fontSize: 11,
-    color: '#666',
-    marginBottom: 6,
-  },
-  sourcesTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
+  messageBubble: { maxWidth: '80%', padding: 12, borderRadius: 16 },
+  userBubble: { backgroundColor: '#007AFF', borderBottomRightRadius: 4 },
+  assistantBubble: { backgroundColor: '#f0f0f0', borderBottomLeftRadius: 4 },
+  messageText: { fontSize: 15, lineHeight: 22, color: '#333' },
+  userMessageText: { color: '#fff' },
+  thinkingText: { fontSize: 14, color: '#666', marginLeft: 8 },
+  sourcesContainer: { marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#ddd' },
+  sourcesTitle: { fontSize: 11, color: '#666', marginBottom: 6 },
+  sourcesTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sourceTag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -398,22 +365,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
-  sourceTagText: {
-    fontSize: 11,
-    color: '#666',
+  sourceTagText: { fontSize: 11, color: '#666' },
+  webSourcesList: { marginTop: 8, gap: 4 },
+  webSourceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
   },
+  webSourceUrl: { fontSize: 11, color: '#007AFF', maxWidth: 200 },
   suggestionsContainer: {
     marginTop: 16,
     padding: 16,
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
   },
-  suggestionsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
-  },
+  suggestionsTitle: { fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 12 },
   suggestionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -423,10 +390,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 8,
   },
-  suggestionText: {
-    fontSize: 14,
-    color: '#007AFF',
-  },
+  suggestionText: { fontSize: 14, color: '#007AFF' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -454,7 +418,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
+  sendButtonDisabled: { backgroundColor: '#ccc' },
 });
