@@ -58,6 +58,21 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 
 ---
 
+## Google Sign-In Fix (Feb 20, 2025)
+
+**Issue**: Google Sign-In was returning `{"detail":"Not Found"}` after authentication.
+
+**Root Cause**: OAuth callback URL `/auth-callback` was routing to frontend instead of backend.
+
+**Fixes Applied**:
+1. Added `/api/auth-callback` endpoint in backend for OAuth redirect handling
+2. Updated login.tsx to use `/api/auth-callback` as redirect URL
+3. Backend returns HTML page that redirects to mobile app via deep link (`tomi://`)
+4. Fixed token response - backend now returns both `token` and `session_token`
+5. Added Android intent filters for `tomi://` scheme deep linking
+
+---
+
 ## Android Build Fixes Applied (Feb 20, 2025)
 
 ### Issues Fixed:
