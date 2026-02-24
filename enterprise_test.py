@@ -15,7 +15,7 @@ import json
 import uuid
 
 # Configuration
-BASE_URL = "https://tomi-owner-mind.preview.emergentagent.com/api"
+BASE_URL = "https://tomi-chatbot-ai.preview.emergentagent.com/api"
 
 def test_enterprise_endpoints():
     print("🏢 Testing TOMI Enterprise API Endpoints")

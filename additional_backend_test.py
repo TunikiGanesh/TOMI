@@ -10,7 +10,7 @@ import os
 import uuid
 
 # Configuration
-BASE_URL = "https://tomi-owner-mind.preview.emergentagent.com/api"
+BASE_URL = "https://tomi-chatbot-ai.preview.emergentagent.com/api"
 TEST_EMAIL = f"test.additional.{uuid.uuid4().hex[:8]}@example.com"
 TEST_PASSWORD = "SecureTestPassword123!"
 TEST_NAME = "Alex Johnson"

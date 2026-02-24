@@ -8,7 +8,7 @@ import json
 import uuid
 
 # Configuration
-BASE_URL = "https://tomi-owner-mind.preview.emergentagent.com/api"
+BASE_URL = "https://tomi-chatbot-ai.preview.emergentagent.com/api"
 
 def debug_auth_tests():
     print("=== DEBUGGING AUTH ERROR HANDLING ===")
