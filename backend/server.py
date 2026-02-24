@@ -328,6 +328,7 @@ async def google_auth(auth_request: GoogleAuthRequest, response: Response):
     
     return {
         "user": user_doc,
+        "token": session_token,
         "session_token": session_token
     }
 
