@@ -22,7 +22,8 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 - **Frontend**: Expo (React Native) with Expo Router
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
-- **AI**: emergentintegrations library (Emergent LLM Key)
+- **AI**: emergentintegrations library (Emergent LLM Key) — OpenAI gpt-5.1
+- **Web Search**: DuckDuckGo HTML lite (no API key needed)
 - **Payments**: Stripe
 - **Deployment**: EAS (Expo Application Services)
 
@@ -39,15 +40,25 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 - [x] Backend API structure with FastAPI
 - [x] MongoDB integration
 - [x] Skeleton services for enterprise features
-- [x] **Android Build Configuration Fixed** - All AAPT errors resolved
+
+### Completed (Feb 24, 2026)
+- [x] **P0: Android Build Configuration Fixed** — app.json icon references corrected to match actual filenames
+- [x] **P1: Intelligent Knowledge Chatbot** — Full hybrid search implementation
+  - Real-time internal business data search (documents, conversations, customers, finances, decisions)
+  - Live web search via DuckDuckGo HTML lite endpoint
+  - Source attribution in responses ([Business Data], [Web: url])
+  - Rate limiting (20 requests/minute per user)
+  - Chat history persistence in MongoDB
+  - Frontend UI with web search toggle, source tags, clickable web source links
+  - Tested: 13/13 backend tests passed, frontend verified
 
 ### In Progress
-- [ ] **P1 - Intelligent Chatbot** - UI exists, backend logic needs implementation
+- [ ] **Google Sign-In** — Fix implemented, awaiting user verification after successful build
 
-### Upcoming Tasks
-- Security & RBAC implementation
-- Data Export functionality
-- Revert subscription prices from ₹1 to original
+### Upcoming Tasks (Priority Order)
+1. Security & RBAC implementation
+2. Data Export functionality
+3. Revert subscription prices from ₹1
 
 ### Future/Backlog
 - Website Builder & Deployment module
@@ -58,96 +69,58 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 
 ---
 
-## Google Sign-In Fix (Feb 20, 2025)
-
-**Issue**: Google Sign-In was returning `{"detail":"Not Found"}` after authentication.
-
-**Root Cause**: OAuth callback URL `/auth-callback` was routing to frontend instead of backend.
-
-**Fixes Applied**:
-1. Added `/api/auth-callback` endpoint in backend for OAuth redirect handling
-2. Updated login.tsx to use `/api/auth-callback` as redirect URL
-3. Backend returns HTML page that redirects to mobile app via deep link (`tomi://`)
-4. Fixed token response - backend now returns both `token` and `session_token`
-5. Added Android intent filters for `tomi://` scheme deep linking
-
----
-
-## Android Build Fixes Applied (Feb 20, 2025)
-
-### Issues Fixed:
-1. **AAPT Icon Compilation Error**
-   - Created minimal PNG icons with pure RGB encoding (no alpha channel)
-   - File sizes reduced to prevent AAPT processing issues
-   - Icons: icon.png (4.5KB), adaptive-icon.png (4.5KB), splash-icon.png (430B), favicon.png (112B)
-
-2. **@types/react Dependency**
-   - Fixed version mismatch: now using `~19.1.10` compatible with Expo SDK 54
-
-3. **Missing Configuration Files**
-   - Created `eas.json` for EAS Build configuration
-   - Configured for both preview (APK) and production (AAB) builds
-
-4. **App Configuration (app.json)**
-   - Added Android package: `com.tomi.ownermind`
-   - Added iOS bundleIdentifier: `com.tomi.ownermind`
-   - Added versionCode for Play Store
-   - Configured permissions: INTERNET, ACCESS_NETWORK_STATE
-   - Updated app name: "TOMI - The Owner Mind"
-
-5. **Environment Configuration**
-   - Fixed `EXPO_USE_FAST_RESOLVER="1"` quoting in .env
-
-### Expo Doctor Results:
-- **17/17 checks passed** ✅
-
----
-
 ## Architecture
 
 ```
 /app
 ├── backend/
-│   ├── server.py           # Main FastAPI app
-│   ├── models.py           # Pydantic models
-│   ├── llm_service.py      # LLM integration
-│   ├── chatbot_service.py  # Chatbot logic (stub)
-│   ├── security_service.py # RBAC (stub)
-│   ├── data_export_service.py # Export (stub)
-│   └── enterprise_service.py  # Enterprise modules (stub)
+│   ├── server.py              # Main FastAPI app (all endpoints)
+│   ├── llm_service.py         # Multi-provider LLM service
+│   ├── chatbot_service.py     # Hybrid search chatbot (REAL web search)
+│   ├── security_service.py    # RBAC & audit (stub)
+│   ├── data_export_service.py # Export & backup (stub)
+│   ├── enterprise_service.py  # Enterprise modules (stub)
+│   ├── document_processor.py  # Document text extraction
+│   ├── channels.py            # Communication channel simulator
+│   ├── subscription_service.py# Stripe subscription
+│   └── requirements.txt
 ├── frontend/
 │   ├── app/
-│   │   ├── (auth)/         # Auth screens
-│   │   ├── (main)/         # Main feature screens
-│   │   ├── (onboarding)/   # Onboarding flow
-│   │   └── (tabs)/         # Tab navigation
-│   ├── assets/images/      # App icons (regenerated)
-│   ├── app.json            # Expo config (updated)
-│   ├── eas.json            # EAS build config (created)
-│   └── package.json        # Dependencies (fixed)
+│   │   ├── (auth)/            # Auth screens (login, signup)
+│   │   ├── (tabs)/            # Tab navigation
+│   │   ├── chatbot.tsx        # Chatbot UI (COMPLETE)
+│   │   ├── subscription.tsx   # Subscription screen
+│   │   └── auth-callback.tsx  # Google OAuth callback
+│   ├── assets/images/         # App icons (4 clean PNGs)
+│   ├── app.json               # Expo config (FIXED)
+│   ├── eas.json               # EAS build config
+│   └── package.json
 └── memory/
-    └── PRD.md              # This file
+    └── PRD.md
 ```
 
 ---
 
-## Play Store Deployment Checklist
+## Key API Endpoints
 
-### Ready:
-- [x] App name: "TOMI - The Owner Mind"
-- [x] Package name: com.tomi.ownermind
-- [x] Version: 1.0.0, versionCode: 1
-- [x] Icons: All valid PNG format
-- [x] EAS configuration: Production builds as AAB
-- [x] Dependencies: All compatible with Expo SDK 54
-
-### Required Before Publishing:
-- [ ] Play Store developer account
-- [ ] Play Store listing assets (screenshots, descriptions)
-- [ ] Privacy policy URL
-- [ ] Service Account Key for automated submission (play-store-key.json)
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/health` | GET | Health check |
+| `/api/auth/register` | POST | Register user |
+| `/api/auth/login` | POST | Login user |
+| `/api/auth/google` | POST | Google OAuth |
+| `/api/auth-callback` | GET | OAuth redirect handler |
+| `/api/business/setup` | POST | Create business |
+| `/api/chatbot/ask` | POST | Ask chatbot (hybrid search) |
+| `/api/chatbot/history` | GET | Get chat history |
+| `/api/conversations` | GET/POST | Manage conversations |
+| `/api/ai/suggest-reply` | POST | AI reply suggestion |
+| `/api/documents/upload` | POST | Upload documents |
+| `/api/subscription/plans` | GET | Get subscription plans |
 
 ---
 
-## Credentials (Secure Storage Required)
-- Google Search API Key: Provided by user, needs to be stored in backend/.env
+## Test Credentials
+- Email: test@tomi.com
+- Password: test123
+- Business: Test Corp (Technology / Software Development)
