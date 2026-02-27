@@ -1379,6 +1379,7 @@ multi_branch_service = create_multi_branch_service(db)
 class ChatbotRequest(BaseModel):
     question: str
     include_web_search: bool = True
+    session_id: Optional[str] = None
 
 @app.post("/api/chatbot/ask")
 async def chatbot_ask(
@@ -1408,7 +1409,8 @@ async def chatbot_ask(
         question=request.question,
         business_id=business['business_id'],
         user_id=user['user_id'],
-        include_web_search=request.include_web_search
+        include_web_search=request.include_web_search,
+        session_id=request.session_id
     )
     
     if not result['success']:
