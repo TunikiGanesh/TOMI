@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
@@ -60,10 +60,9 @@ export default function Index() {
     return (
       <View style={styles.container}>
         <StatusBar style="light" />
-        <Image
-          source={require('../assets/images/icon.png')}
-          style={styles.logo}
-        />
+        <View style={styles.logoMark}>
+          <Text style={styles.logoLetter}>T</Text>
+        </View>
         <Text style={styles.title}>TOMI</Text>
         <Text style={styles.subtitle}>The Owner Mind</Text>
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
