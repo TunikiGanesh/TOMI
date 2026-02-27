@@ -159,21 +159,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100,
   },
-  testBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF9E6',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    gap: 8,
-  },
-  testBannerText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#FF9500',
-    fontWeight: '600',
-  },
   planCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -216,12 +201,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 4,
   },
-  testPrice: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-    textDecorationLine: 'line-through',
-  },
   features: {
     marginBottom: 20,
   },
@@ -251,22 +230,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  noteCard: {
-    backgroundColor: '#F0F7FF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-  },
-  noteTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-  },
-  noteText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
   },
 });
