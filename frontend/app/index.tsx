@@ -80,10 +80,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
-    width: 100,
-    height: 100,
+  logoMark: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
+  },
+  logoLetter: {
+    fontSize: 44,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   title: {
     fontSize: 48,
