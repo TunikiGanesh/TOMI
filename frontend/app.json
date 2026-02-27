@@ -4,7 +4,6 @@
     "slug": "tomi-owner-mind",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "tomi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,10 +14,6 @@
     "android": {
       "package": "com.tomi.ownermind",
       "versionCode": 1,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#007AFF"
-      },
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
@@ -38,8 +33,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router",
