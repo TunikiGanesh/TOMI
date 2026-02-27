@@ -58,7 +58,6 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 ### Upcoming Tasks (Priority Order)
 1. Security & RBAC implementation
 2. Data Export functionality
-3. Revert subscription prices from ₹1
 
 ### Future/Backlog
 - Website Builder & Deployment module
