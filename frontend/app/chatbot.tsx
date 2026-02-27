@@ -43,6 +43,7 @@ export default function ChatbotScreen() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [includeWebSearch, setIncludeWebSearch] = useState(true);
+  const [sessionId] = useState(() => `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
     setMessages([
@@ -87,6 +88,7 @@ export default function ChatbotScreen() {
         body: JSON.stringify({
           question: userMessage.content,
           include_web_search: includeWebSearch,
+          session_id: sessionId,
         }),
       });
 
