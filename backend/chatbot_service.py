@@ -199,12 +199,25 @@ class ChatbotService:
 
     # ---- Generate Answer ----
 
+    async def _load_session_history(self, business_id: str, user_id: str, session_id: str, limit: int = 10) -> List[Dict]:
+        """Load recent Q&A pairs from the same chat session."""
+        try:
+            history = await self.db.chat_history.find(
+                {"business_id": business_id, "user_id": user_id, "session_id": session_id},
+                {"_id": 0, "question": 1, "answer": 1},
+            ).sort("timestamp", 1).limit(limit).to_list(limit)
+            return history
+        except Exception as e:
+            logger.error(f"Session history load error: {e}")
+            return []
+
     async def generate_answer(
         self,
         question: str,
         business_id: str,
         user_id: str,
         include_web_search: bool = True,
+        session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         # Rate limit
         if not rate_limiter.is_allowed(user_id):
