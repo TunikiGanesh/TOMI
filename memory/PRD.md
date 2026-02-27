@@ -42,7 +42,7 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 - [x] Skeleton services for enterprise features
 
 ### Completed (Feb 24, 2026)
-- [x] **P0: Android Build Configuration Fixed** — app.json icon references corrected to match actual filenames
+- [x] **P0: Android Build Configuration Fixed** — app.json icon references corrected; all PNGs regenerated with Pillow (proper IHDR/IDAT/IEND chunks, CRC-verified, 75KB 1024x1024 RGB); all caches cleared
 - [x] **P1: Intelligent Knowledge Chatbot** — Full hybrid search implementation
   - Real-time internal business data search (documents, conversations, customers, finances, decisions)
   - Live web search via DuckDuckGo HTML lite endpoint
