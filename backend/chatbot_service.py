@@ -235,15 +235,28 @@ class ChatbotService:
             # 3. Build context
             context = self._build_context(internal, web, include_web_search)
 
-            # 4. LLM call
+            # 4. Load conversation memory for this session
+            conv_history_text = ""
+            if session_id:
+                prev_turns = await self._load_session_history(business_id, user_id, session_id)
+                if prev_turns:
+                    lines = []
+                    for t in prev_turns[-8:]:  # Last 8 turns max
+                        lines.append(f"User: {t['question']}")
+                        ans_preview = (t.get('answer') or '')[:400]
+                        lines.append(f"TOMI: {ans_preview}")
+                    conv_history_text = "\n\nCONVERSATION HISTORY (same session):\n" + "\n".join(lines)
+
+            # 5. LLM call
             system_msg = (
                 "You are TOMI, an intelligent business assistant with access to the owner's data.\n\n"
                 "RULES:\n"
                 "- Prioritise business data. Only supplement with web results when internal data is insufficient.\n"
                 "- Always cite where information comes from: [Business Data], [Document: filename], [Web: url].\n"
                 "- Never fabricate business-specific numbers.\n"
-                "- Be concise, actionable and owner-friendly.\n\n"
-                f"AVAILABLE DATA:\n{context}"
+                "- Be concise, actionable and owner-friendly.\n"
+                "- Use the conversation history to understand follow-up questions in context.\n\n"
+                f"AVAILABLE DATA:\n{context}{conv_history_text}"
             )
 
             chat = LlmChat(
@@ -255,7 +268,7 @@ class ChatbotService:
             user_message = UserMessage(text=question)
             answer = await chat.send_message(user_message)
 
-            # 5. Persist to chat history
+            # 6. Persist to chat history
             sources_summary = {
                 'documents': len(internal.get('documents', [])),
                 'conversations': len(internal.get('conversations', [])),
@@ -266,14 +279,18 @@ class ChatbotService:
                 'web_sources': web.get('sources', []),
             }
 
-            await self.db.chat_history.insert_one({
+            history_doc = {
                 "business_id": business_id,
                 "user_id": user_id,
                 "question": question,
                 "answer": answer,
                 "sources_used": sources_summary,
                 "timestamp": datetime.now(timezone.utc),
-            })
+            }
+            if session_id:
+                history_doc["session_id"] = session_id
+
+            await self.db.chat_history.insert_one(history_doc)
 
             return {
                 'success': True,
