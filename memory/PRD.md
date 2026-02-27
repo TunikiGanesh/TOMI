@@ -36,7 +36,7 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
 - [x] Business registration onboarding flow
 - [x] Main app navigation and tabs
 - [x] Home screen with feature links
-- [x] Subscription screen with Stripe integration (test prices)
+- [x] Subscription screen with Stripe integration (production prices)
 - [x] Backend API structure with FastAPI
 - [x] MongoDB integration
 - [x] Skeleton services for enterprise features
