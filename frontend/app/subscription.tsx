@@ -53,7 +53,7 @@ export default function Subscription() {
 
       if (response.ok) {
         const data = await response.json();
-        Alert.alert('Success', 'Subscription checkout created! (Test mode - no actual payment)');
+        Alert.alert('Success', 'Subscription checkout created!');
       } else {
         Alert.alert('Error', 'Failed to create checkout session');
       }
@@ -85,23 +85,15 @@ export default function Subscription() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.testBanner}>
-          <Ionicons name="information-circle" size={20} color="#FF9500" />
-          <Text style={styles.testBannerText}>
-            ⚡ TESTING MODE: All plans at ₹1 for testing purposes
-          </Text>
-        </View>
-
         {Object.entries(plans).map(([planId, plan]: [string, any]) => (
-          <View key={planId} style={styles.planCard}>
+          <View key={planId} style={styles.planCard} data-testid={`plan-card-${planId}`}>
             <View style={styles.planHeader}>
               <Text style={styles.planName}>{plan.name}</Text>
               <View style={styles.priceContainer}>
                 <Text style={styles.currency}>₹</Text>
-                <Text style={styles.price}>{plan.price_inr}</Text>
+                <Text style={styles.price} data-testid={`plan-price-${planId}`}>{plan.price_inr}</Text>
                 <Text style={styles.period}>/month</Text>
               </View>
-              <Text style={styles.testPrice}>Normal price: ₹{planId === 'assist' ? '499' : planId === 'smart' ? '999' : '1999'}</Text>
             </View>
 
             <View style={styles.features}>
@@ -120,6 +112,7 @@ export default function Subscription() {
               ]}
               onPress={() => subscribe(planId)}
               disabled={subscribing === planId}
+              data-testid={`subscribe-btn-${planId}`}
             >
               {subscribing === planId ? (
                 <ActivityIndicator color="#fff" />
@@ -129,14 +122,6 @@ export default function Subscription() {
             </TouchableOpacity>
           </View>
         ))}
-
-        <View style={styles.noteCard}>
-          <Text style={styles.noteTitle}>💳 Test Mode Active</Text>
-          <Text style={styles.noteText}>
-            All subscription plans are currently set to ₹1 for testing purposes. 
-            No real payment will be processed. This is for demonstration only.
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );

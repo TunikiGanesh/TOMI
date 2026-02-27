@@ -6,12 +6,11 @@ from typing import Dict
 # Initialize Stripe
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', 'sk_test_dummy_key')
 
-# Subscription Plans - TESTING PRICE ₹1
 SUBSCRIPTION_PLANS = {
     'assist': {
         'name': 'Assist Plan',
-        'price_inr': 1,  # ₹1 for testing (normal: ₹499)
-        'price_usd': 1,  # $1 for testing (normal: $6)
+        'price_inr': 499,
+        'price_usd': 6,
         'features': [
             'Manual workspace',
             'Unified inbox',
@@ -21,8 +20,8 @@ SUBSCRIPTION_PLANS = {
     },
     'smart': {
         'name': 'Smart Plan',
-        'price_inr': 1,  # ₹1 for testing (normal: ₹999)
-        'price_usd': 1,  # $1 for testing (normal: $12)
+        'price_inr': 999,
+        'price_usd': 12,
         'features': [
             'All Assist features',
             'Predictive recommendations',
@@ -33,8 +32,8 @@ SUBSCRIPTION_PLANS = {
     },
     'auto': {
         'name': 'Auto Plan',
-        'price_inr': 1,  # ₹1 for testing (normal: ₹1999)
-        'price_usd': 1,  # $1 for testing (normal: $24)
+        'price_inr': 1999,
+        'price_usd': 24,
         'features': [
             'All Smart features',
             'Owner-approved automation',
@@ -43,13 +42,6 @@ SUBSCRIPTION_PLANS = {
             'Advanced workflow execution'
         ]
     }
-}
-
-# ORIGINAL PRICES (stored for reverting)
-ORIGINAL_PRICES = {
-    'assist': {'price_inr': 499, 'price_usd': 6},
-    'smart': {'price_inr': 999, 'price_usd': 12},
-    'auto': {'price_inr': 1999, 'price_usd': 24}
 }
 
 def get_subscription_plans():
