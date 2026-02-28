@@ -430,33 +430,37 @@ async def auth_callback(request: Request):
         </div>
         <script>
             (function() {
-                // Get session_id from hash
+                var sessionId = null;
+                
+                // 1. Try hash fragment (Emergent Auth default)
                 var hash = window.location.hash;
                 var match = hash.match(/session_id=([^&]+)/);
+                if (match) sessionId = match[1];
                 
-                if (match) {
-                    var sessionId = match[1];
+                // 2. Try query parameters as fallback
+                if (!sessionId) {
+                    var params = new URLSearchParams(window.location.search);
+                    sessionId = params.get('session_id');
+                }
+                
+                if (sessionId) {
+                    // Use query param (?session_id=) for deep link — more reliable on Android than hash
+                    var appUrl = 'tomi://auth-callback?session_id=' + sessionId;
                     
-                    // Try to open the mobile app with the session_id
-                    var appUrl = 'tomi://auth-callback#session_id=' + sessionId;
-                    
-                    // Also prepare the web fallback URL
-                    var webUrl = window.location.origin + '/auth-callback#session_id=' + sessionId;
-                    
-                    // Try to open the app
+                    // Try deep link first
                     window.location.href = appUrl;
                     
-                    // If app doesn't open after 2.5 seconds, show the error
+                    // Fallback: after 2s, try web route with query param
                     setTimeout(function() {
-                        document.getElementById('status').textContent = 'App not responding...';
+                        document.getElementById('status').textContent = 'Trying alternative redirect...';
+                        window.location.href = window.location.origin + '/auth-callback?session_id=' + sessionId;
+                    }, 2000);
+                    
+                    // Final fallback: show error after 5s
+                    setTimeout(function() {
+                        document.getElementById('status').textContent = 'Could not open app';
                         document.getElementById('error').style.display = 'block';
-                        
-                        // Try web fallback
-                        setTimeout(function() {
-                            // If we're still on this page, the app didn't open
-                            // We can't know for sure, so just leave the error message
-                        }, 500);
-                    }, 2500);
+                    }, 5000);
                 } else {
                     document.getElementById('status').textContent = 'No session found';
                     document.getElementById('error').textContent = 'Authentication failed. Please try again.';
