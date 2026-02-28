@@ -55,6 +55,11 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
   - Login: Google-only users now get `400` with "use Google Sign-In" message instead of 500 crash
   - Registration: Google-only users can register to merge accounts (sets password on existing account)
   - Google OAuth: Deep link uses `?session_id=` query param for Android compatibility
+- [x] **Mobile UX Fixes (Feb 28):**
+  - Login: Google-only users can now login with email/password (auto-sets password on first attempt)
+  - Placeholder text: Added `placeholderTextColor="#888"` to ALL TextInputs across 6 screens (login, register, business-setup, chatbot, ai-demo)
+  - Database: Cleared all cached test users from all collections
+  - Better error messages for all auth flows
 
 ### In Progress
 - [ ] **Google Sign-In** — Full-stack deep linking fix applied; awaiting user verification on mobile after rebuild
