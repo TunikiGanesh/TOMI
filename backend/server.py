@@ -192,7 +192,21 @@ async def register(user_data: UserRegister):
     # Check if user exists
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        # If user exists but was created via Google (no password), allow them to set a password
+        if not existing.get('password_hash'):
+            hashed_pw = hash_password(user_data.password)
+            await db.users.update_one(
+                {"email": user_data.email},
+                {"$set": {
+                    "password_hash": hashed_pw,
+                    "name": user_data.name or existing.get('name'),
+                    "phone": user_data.phone or existing.get('phone'),
+                }}
+            )
+            user_doc = await db.users.find_one({"email": user_data.email}, {"_id": 0, "password_hash": 0})
+            token = create_jwt_token(user_doc['user_id'])
+            return {"user": user_doc, "token": token}
+        raise HTTPException(status_code=400, detail="Email already registered. Please sign in instead.")
     
     # Create user
     user_id = f"user_{uuid.uuid4().hex[:12]}"
@@ -231,8 +245,15 @@ async def login(credentials: UserLogin):
     if not user_doc:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check if user was created via Google OAuth and has no password
+    if not user_doc.get('password_hash'):
+        raise HTTPException(
+            status_code=400,
+            detail="This account uses Google Sign-In. Please tap 'Continue with Google' to log in."
+        )
+    
     # Verify password
-    if not verify_password(credentials.password, user_doc.get('password_hash', '')):
+    if not verify_password(credentials.password, user_doc['password_hash']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Create JWT token
