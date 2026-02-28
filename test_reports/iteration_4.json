@@ -1,0 +1,118 @@
+{
+  "summary": "Completed comprehensive testing of mobile login bug fixes (Iteration 4). All 15 backend tests passed. All placeholder text visibility fixes verified. Main app screens load without crashing.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Form submission via web preview",
+        "issue": "React Native Web TouchableOpacity click handling requires workarounds in Playwright (double elements, visibility issues)",
+        "affected_selectors": ["input[placeholder]", "div[role='button']"],
+        "priority": "LOW",
+        "note": "This is a web preview limitation, not a mobile app bug"
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Console warnings",
+        "issues": [
+          "shadow* style props deprecation warnings (cosmetic, not functional)",
+          "Expo Router warning: 'No route named auth-callback exists' - Expected behavior, auth-callback is backend endpoint"
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration4_auth_and_placeholder.py",
+    "/app/test_reports/pytest/iteration4_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Bug Fix #1 verified: Login endpoint (line 248-256) auto-sets password for Google-only users instead of crashing",
+    "Bug Fix #2 verified: Register endpoint (line 193-208) merges Google-only accounts by setting password_hash",
+    "Placeholder Fix verified: All 6 files have placeholderTextColor='#888' set on all TextInput components",
+    "Database cleanup verified: All test users removed as expected"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration4_auth_and_placeholder.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (All screens load correctly, placeholder text visible)"
+  },
+  "test_credentials": {
+    "test_user_pattern": "test_ui_{random}@tomi.com",
+    "password": "TestPass123!"
+  },
+  "seed_data_creation": "Created temporary test user testfresh@tomi.com with business for UI testing (cleaned up after tests)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 4 verified all mobile bug fixes: 1) Google-only user login now auto-sets password (200 OK) instead of 500 crash, 2) Register merges Google-only accounts, 3) All 6 frontend files have placeholderTextColor='#888' for visible placeholder text, 4) All main app screens (home, conversations, decisions, insights, control, chatbot, ai-demo) load without crashing. Database was cleared and cleaned after testing.",
+  "features_verified": {
+    "bug_1_google_only_login_auto_password": {
+      "issue": "Google-only user login crashed with 500 (bcrypt on empty hash)",
+      "fix": "Login endpoint now auto-sets password for Google-only users before verify_password()",
+      "test_result": "PASSED - Returns 200 with token, password persists for subsequent logins"
+    },
+    "bug_2_register_merges_google_account": {
+      "issue": "Google-only users couldn't set password via register",
+      "fix": "Register endpoint detects Google-only users and updates password_hash",
+      "test_result": "PASSED - Merged account can login with password"
+    },
+    "bug_3_placeholder_text_visibility": {
+      "issue": "Placeholder text invisible (white on light background)",
+      "fix": "Added placeholderTextColor='#888' to all TextInput components in 6 files",
+      "test_result": "PASSED - Screenshots show visible placeholder text with good contrast"
+    },
+    "bug_4_database_cleared": {
+      "issue": "User requested all cached users cleared",
+      "fix": "Database collections cleared",
+      "test_result": "PASSED - Login with any email returns 401 'Invalid credentials'"
+    },
+    "bug_5_auth_callback_deep_linking": {
+      "issue": "Android deep links don't work with hash fragments",
+      "fix": "Auth-callback uses ?session_id= query param",
+      "test_result": "PASSED - HTML contains 'tomi://auth-callback?session_id='"
+    }
+  },
+  "test_execution_details": {
+    "backend_tests": [
+      "GET /api/health - returns 200 healthy",
+      "POST /api/auth/login - non-existent user returns 401",
+      "POST /api/auth/register - creates new user with token",
+      "POST /api/auth/register - validates required fields",
+      "POST /api/auth/register - validates email format",
+      "POST /api/auth/login - valid credentials return token",
+      "POST /api/auth/login - wrong password returns 401",
+      "POST /api/auth/login - Google-only user auto-sets password (200 OK)",
+      "POST /api/auth/login - password persists for subsequent logins",
+      "POST /api/auth/login - wrong password after auto-set returns 401",
+      "POST /api/auth/register - merges Google-only account",
+      "POST /api/auth/register - existing password user returns 400",
+      "GET /api/auth-callback - returns HTML",
+      "GET /api/auth-callback - contains query param deep link",
+      "GET /api/auth-callback - handles both hash and query params"
+    ],
+    "frontend_tests": [
+      "Login page loads with visible placeholder text (Email, Password)",
+      "Register page loads with all 5 visible placeholders",
+      "Home tab loads without crashing",
+      "Conversations (Inbox) tab loads without crashing",
+      "Decisions tab loads without crashing",
+      "Insights tab loads without crashing",
+      "Control tab loads without crashing",
+      "Chatbot page loads with visible placeholder text",
+      "AI Demo page loads with visible placeholder text"
+    ],
+    "placeholder_verification": {
+      "login.tsx": ["Email", "Password"],
+      "register.tsx": ["Full Name", "Email", "Phone Number", "Password", "Confirm Password"],
+      "business-setup.tsx": ["e.g., Acme Coffee Shop", "Describe what you sell...", "e.g., Mon-Fri 9AM-6PM", "City, Country"],
+      "chatbot.tsx": ["Ask anything about your business..."],
+      "ai-demo.tsx": ["Enter a customer message..."]
+    }
+  }
+}
