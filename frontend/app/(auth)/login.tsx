@@ -57,7 +57,7 @@ export default function Login() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Error', 'Failed to connect to server');
+      Alert.alert('Error', 'Failed to connect to server. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
