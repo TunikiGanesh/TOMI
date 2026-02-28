@@ -51,6 +51,10 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
   - Chat history persistence in MongoDB
   - Frontend UI with web search toggle, source tags, clickable web source links
   - Tested: 13/13 backend tests passed, frontend verified
+- [x] **Auth Bug Fixes (3 critical issues, Feb 28):**
+  - Login: Google-only users now get `400` with "use Google Sign-In" message instead of 500 crash
+  - Registration: Google-only users can register to merge accounts (sets password on existing account)
+  - Google OAuth: Deep link uses `?session_id=` query param for Android compatibility
 
 ### In Progress
 - [ ] **Google Sign-In** — Full-stack deep linking fix applied; awaiting user verification on mobile after rebuild
