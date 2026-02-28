@@ -99,6 +99,7 @@ export default function Register() {
             <TextInput
               style={styles.input}
               placeholder="Full Name"
+              placeholderTextColor="#888"
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -110,6 +111,7 @@ export default function Register() {
             <TextInput
               style={styles.input}
               placeholder="Email"
+              placeholderTextColor="#888"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -123,6 +125,7 @@ export default function Register() {
             <TextInput
               style={styles.input}
               placeholder="Phone Number"
+              placeholderTextColor="#888"
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
@@ -135,6 +138,7 @@ export default function Register() {
             <TextInput
               style={styles.input}
               placeholder="Password"
+              placeholderTextColor="#888"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -157,6 +161,7 @@ export default function Register() {
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
+              placeholderTextColor="#888"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
