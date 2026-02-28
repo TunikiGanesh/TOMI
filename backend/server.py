@@ -247,10 +247,13 @@ async def login(credentials: UserLogin):
     
     # Check if user was created via Google OAuth and has no password
     if not user_doc.get('password_hash'):
-        raise HTTPException(
-            status_code=400,
-            detail="This account uses Google Sign-In. Please tap 'Continue with Google' to log in."
+        # Auto-set password for Google-verified users on first email/password login
+        hashed_pw = hash_password(credentials.password)
+        await db.users.update_one(
+            {"email": credentials.email},
+            {"$set": {"password_hash": hashed_pw}}
         )
+        user_doc['password_hash'] = hashed_pw
     
     # Verify password
     if not verify_password(credentials.password, user_doc['password_hash']):
