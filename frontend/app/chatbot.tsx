@@ -298,6 +298,7 @@ export default function ChatbotScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ask anything about your business..."
+            placeholderTextColor="#888"
             value={inputText}
             onChangeText={setInputText}
             multiline

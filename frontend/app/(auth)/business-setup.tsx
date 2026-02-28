@@ -115,6 +115,7 @@ export default function BusinessSetup() {
             <TextInput
               style={styles.input}
               placeholder="e.g., Acme Coffee Shop"
+              placeholderTextColor="#888"
               value={businessName}
               onChangeText={setBusinessName}
             />
@@ -150,6 +151,7 @@ export default function BusinessSetup() {
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Describe what you sell or provide..."
+              placeholderTextColor="#888"
               value={productsServices}
               onChangeText={setProductsServices}
               multiline
@@ -163,6 +165,7 @@ export default function BusinessSetup() {
             <TextInput
               style={styles.input}
               placeholder="e.g., Mon-Fri 9AM-6PM"
+              placeholderTextColor="#888"
               value={workingHours}
               onChangeText={setWorkingHours}
             />
@@ -173,6 +176,7 @@ export default function BusinessSetup() {
             <TextInput
               style={styles.input}
               placeholder="City, Country"
+              placeholderTextColor="#888"
               value={location}
               onChangeText={setLocation}
             />

@@ -129,6 +129,7 @@ export default function AIDemo() {
           <TextInput
             style={styles.textArea}
             placeholder="Enter a customer message..."
+            placeholderTextColor="#888"
             value={customerMessage}
             onChangeText={setCustomerMessage}
             multiline
