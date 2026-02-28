@@ -53,7 +53,7 @@ Build a complete mobile-first application named "TOMI - The Owner Mind," a decis
   - Tested: 13/13 backend tests passed, frontend verified
 
 ### In Progress
-- [ ] **Google Sign-In** — Fix implemented, awaiting user verification after successful build
+- [ ] **Google Sign-In** — Full-stack deep linking fix applied; awaiting user verification on mobile after rebuild
 
 ### Upcoming Tasks (Priority Order)
 1. Security & RBAC implementation
