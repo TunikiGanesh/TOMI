@@ -20,19 +20,22 @@ export default function AuthCallback() {
     try {
       let sessionId: string | null = null;
 
-      // Try to get session_id from different sources
-      
-      // 1. From URL params (deep link)
+      // 1. From URL query params (preferred — set by our auth-callback redirect)
       if (params.session_id) {
         sessionId = Array.isArray(params.session_id) ? params.session_id[0] : params.session_id;
       }
       
-      // 2. From URL hash (web)
+      // 2. From URL hash (web fallback)
       if (!sessionId && Platform.OS === 'web' && typeof window !== 'undefined') {
-        const hash = window.location.hash;
-        const match = hash.match(/session_id=([^&]+)/);
-        if (match) {
-          sessionId = match[1];
+        // Check query string first
+        const urlParams = new URLSearchParams(window.location.search);
+        sessionId = urlParams.get('session_id');
+        
+        // Then hash fragment
+        if (!sessionId) {
+          const hash = window.location.hash;
+          const match = hash.match(/session_id=([^&]+)/);
+          if (match) sessionId = match[1];
         }
       }
       
@@ -40,9 +43,14 @@ export default function AuthCallback() {
       if (!sessionId) {
         const initialUrl = await Linking.getInitialURL();
         if (initialUrl) {
-          const match = initialUrl.match(/session_id=([^&]+)/);
-          if (match) {
-            sessionId = match[1];
+          // Try query param first (?session_id=)
+          const qMatch = initialUrl.match(/[?&]session_id=([^&#]+)/);
+          if (qMatch) {
+            sessionId = qMatch[1];
+          } else {
+            // Try hash fragment (#session_id=)
+            const hMatch = initialUrl.match(/[#&]session_id=([^&]+)/);
+            if (hMatch) sessionId = hMatch[1];
           }
         }
       }
